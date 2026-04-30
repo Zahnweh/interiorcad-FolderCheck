@@ -24,10 +24,18 @@ Prüft die Ordnerstruktur und Dateibenennung von Vectorworks/interiorcad-Konfigu
 
 ### Hinweis zu macOS Gatekeeper
 
-Da die App nicht über den Mac App Store vertrieben wird, kann macOS beim ersten Start eine Warnung anzeigen.
+Da die App nicht notarisiert ist, meldet macOS beim ersten Start:  
+**„interiorcad FolderCheck ist beschädigt und kann nicht geöffnet werden."**
 
-**Lösung:** Nach dem ersten Blockieren in  
-**Systemeinstellungen → Datenschutz & Sicherheit → „Trotzdem öffnen"** klicken.
+Die App ist nicht beschädigt – macOS blockiert sie, weil sie aus dem Internet stammt und nicht von Apple geprüft wurde.
+
+**Lösung:** Vor dem Öffnen der DMG im Terminal ausführen:
+
+```bash
+xattr -d com.apple.quarantine ~/Downloads/interiorcad-FolderCheck.dmg
+```
+
+Danach die DMG normal öffnen und die App in den Programme-Ordner ziehen. Dieser Schritt ist nur bei der manuellen Erstinstallation nötig.
 
 Für alle weiteren Updates empfiehlt sich die integrierte Update-Funktion (**Hilfe → Auf Updates prüfen**) – dort tritt dieses Problem nicht auf.
 
