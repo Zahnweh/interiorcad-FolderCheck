@@ -63,6 +63,13 @@ cp icon.icns "$APP/Contents/Resources/icon.icns"
 /usr/libexec/PlistBuddy -c "Set :CFBundleIconFile icon.icns" "$APP/Contents/Info.plist" 2>/dev/null || true
 touch "$APP"
 
+# Ad-hoc-Signatur setzen (kein Apple-Developer-Account nötig).
+# Verhindert die "beschädigt"-Meldung auf macOS – ohne Signatur zeigt
+# Gatekeeper diesen Fehler auch bei intakten Apps. Mit Ad-hoc-Signatur
+# erscheint stattdessen "unbekannter Entwickler" → Rechtsklick → Öffnen möglich.
+echo "Signiere App (ad-hoc)..."
+codesign --deep --force --sign - "$APP" && echo "  → Signiert" || echo "  → Signierung übersprungen (codesign nicht verfügbar)"
+
 echo "  → App erstellt: $APP"
 
 # 4. DMG erstellen

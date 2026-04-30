@@ -171,6 +171,12 @@ class _UpdateDialog(tk.Toplevel):
         self._progress_var.set(100)
         self._progress_lbl.set("Download abgeschlossen.")
 
+        # Quarantäne-Flag entfernen, damit Gatekeeper das DMG nicht blockiert
+        subprocess.call(
+            ["xattr", "-d", "com.apple.quarantine", dest],
+            stderr=subprocess.DEVNULL,
+        )
+
         # DMG öffnen (Finder mountet es automatisch)
         subprocess.call(["open", dest])
 
