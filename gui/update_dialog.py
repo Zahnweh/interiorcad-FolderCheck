@@ -93,7 +93,6 @@ class _UpdateDialog(tk.Toplevel):
             height=9,
             wrap="word",
             relief="flat",
-            bg="#f4f4f4",
             font=("Helvetica", 11),
             yscrollcommand=vsb.set,
         )
