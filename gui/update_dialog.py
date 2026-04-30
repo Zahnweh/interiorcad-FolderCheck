@@ -94,6 +94,11 @@ class _UpdateDialog(tk.Toplevel):
             wrap="word",
             relief="flat",
             font=("Helvetica", 11),
+            bg="systemTextBackgroundColor",
+            fg="systemTextColor",
+            selectbackground="systemSelectedTextBackgroundColor",
+            selectforeground="systemSelectedTextColor",
+            insertbackground="systemTextColor",
             yscrollcommand=vsb.set,
         )
         txt.pack(side="left", fill="both", expand=True)
