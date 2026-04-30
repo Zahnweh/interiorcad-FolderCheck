@@ -46,28 +46,3 @@ Die App prüft nicht automatisch im Hintergrund auf Updates. Manuell prüfen üb
 **Menü → Hilfe → Auf Updates prüfen**
 
 Bei verfügbarem Update wird die neue Version direkt heruntergeladen und als DMG geöffnet.
-
-## Hintergrund: AGO- und BNO-Priorität
-
-interiorcad verwendet bei gleichnamigen Dateien folgende Reihenfolge:
-
-1. **Arbeitsgruppen-Ordner (AGO)** – höchste Priorität
-2. **Benutzer-Ordner (BNO)**
-3. **Programm-Ordner**
-
-Ein AGO-Eintrag überschattet den BNO-Eintrag. Dieser wird nicht gelöscht, aber von interiorcad ignoriert.
-
-## Build (für Entwickler)
-
-```bash
-# Abhängigkeiten werden automatisch installiert
-./build_mac.sh
-```
-
-Erstellt `dist/interiorcad-FolderCheck.dmg`.
-
-Die App-Version wird in `core/version.py` gepflegt. Für ein neues Release:
-
-1. `APP_VERSION` in `core/version.py` erhöhen
-2. `./build_mac.sh` ausführen
-3. Auf GitHub ein Release mit Tag `v1.x.x` anlegen und die DMG hochladen
