@@ -35,7 +35,13 @@ fi
 
 # 3. PyInstaller
 echo "Baue App (das dauert 1-2 Minuten)..."
-rm -rf build/ dist/
+rm -rf build/
+# dist/ nur löschen wenn möglich (laufende App sperrt das Bundle)
+if ! rm -rf dist/ 2>/dev/null; then
+    echo "  Hinweis: dist/ konnte nicht gelöscht werden – App läuft möglicherweise noch."
+    echo "  Bitte App beenden und erneut versuchen."
+    exit 1
+fi
 
 pyinstaller \
     --name "interiorcad FolderCheck" \
