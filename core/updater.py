@@ -4,6 +4,7 @@ core/updater.py – Update-Prüfung via GitHub Releases API.
 
 import json
 import os
+import ssl
 import urllib.request
 from urllib.error import URLError
 
@@ -11,6 +12,16 @@ from .version import APP_VERSION, GITHUB_OWNER, GITHUB_REPO
 
 _API_URL = f"https://api.github.com/repos/{GITHUB_OWNER}/{GITHUB_REPO}/releases/latest"
 _HEADERS = {"User-Agent": f"interiorcad-FolderCheck/{APP_VERSION}"}
+
+
+def _ssl_context() -> ssl.SSLContext:
+    # Im PyInstaller-Bundle fehlen oft die System-CA-Zertifikate.
+    # certifi liefert einen eigenen CA-Bundle, der zuverlässig funktioniert.
+    try:
+        import certifi
+        return ssl.create_default_context(cafile=certifi.where())
+    except ImportError:
+        return ssl.create_default_context()
 
 
 def _parse_version(tag: str) -> tuple:
@@ -29,7 +40,7 @@ def fetch_latest_release() -> dict | None:
     """
     try:
         req = urllib.request.Request(_API_URL, headers=_HEADERS)
-        with urllib.request.urlopen(req, timeout=10) as resp:
+        with urllib.request.urlopen(req, timeout=10, context=_ssl_context()) as resp:
             data = json.loads(resp.read().decode())
     except (URLError, json.JSONDecodeError, Exception):
         return None
@@ -63,7 +74,7 @@ def download_file(url: str, dest_path: str, progress_cb=None) -> bool:
     """
     try:
         req = urllib.request.Request(url, headers=_HEADERS)
-        with urllib.request.urlopen(req, timeout=120) as resp:
+        with urllib.request.urlopen(req, timeout=120, context=_ssl_context()) as resp:
             total = int(resp.headers.get("Content-Length", 0))
             done = 0
             with open(dest_path, "wb") as f:
