@@ -25,9 +25,9 @@ def _ssl_context() -> ssl.SSLContext:
 
 
 def _parse_version(tag: str) -> tuple:
-    tag = tag.lstrip("v").strip()
+    tag = tag.strip().lstrip("v").lstrip(".")
     try:
-        return tuple(int(x) for x in tag.split("."))
+        return tuple(int(x) for x in tag.split(".") if x)
     except ValueError:
         return (0,)
 
