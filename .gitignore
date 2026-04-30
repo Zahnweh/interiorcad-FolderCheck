@@ -1,0 +1,35 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+.env
+venv/
+.venv/
+
+# Build-Artefakte (werden durch build_mac.sh / build_windows.bat erzeugt)
+build/
+dist/
+*.spec
+
+# macOS
+.DS_Store
+.AppleDouble
+._*
+.Spotlight-V100
+.Trashes
+*.icloud
+
+# Windows
+Thumbs.db
+Desktop.ini
+
+# Claude Code (lokale Session-Einstellungen)
+.claude/settings.local.json
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
