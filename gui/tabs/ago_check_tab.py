@@ -476,7 +476,7 @@ class AGOCheckTab(ttk.Frame):
             ec = dupes.exportstarter_conflict
             ins("exportstarter-Konflikt\n", "bold")
             ins("  Existiert gleichzeitig in BNO und AGO.\n"
-                "  interiorcad verwendet ausschließlich die BNO-Version.\n\n", "warning")
+                "  interiorcad verwendet ausschließlich die AGO-Version.\n\n", "warning")
             ins("  BNO: ", "bold"); ins(shorten_path(ec.bno_path) + "\n", "path")
             ins("      ")
             self._finder_button(t, ec.bno_path, "BNO im Finder zeigen")
@@ -503,7 +503,8 @@ class AGOCheckTab(ttk.Frame):
                     ins("        ")
                     self._finder_button(t, dup.ago_full_path, "AGO im Finder zeigen")
                 ins("\n")
-            ins("interiorcad bevorzugt bei gleichem Dateinamen immer die BNO-Version.\n", "muted")
+            ins("Hinweis: Der AGO hat Vorrang – bei gleichem Dateinamen verwendet "
+                "interiorcad die AGO-Version; die BNO-Version wird ignoriert.\n", "muted")
 
         if dupes.scan_errors:
             ins("\nFehler beim Scan:\n", "error")
