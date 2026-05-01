@@ -71,6 +71,7 @@ class AnalyzerApp:
 
         self.status_bar.set_action(_run_active)
         self.root.after(200, self._refresh_all)
+        self.root.after(3000, lambda: check_for_updates(self.root, silent=True))
 
     def _refresh_all(self):
         self.tab_ago.refresh()
