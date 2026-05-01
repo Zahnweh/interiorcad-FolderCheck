@@ -401,12 +401,16 @@ class AGOCheckTab(ttk.Frame):
             ins("Kein gültiger AGO – Pflichtstruktur noch nicht angelegt.\n"
                 "Bitte den AGO in Vectorworks unter Extras › Programmeinstellungen einrichten.\n",
                 "error")
-        elif struct.is_valid:
-            ins("Ordnerstruktur ok.\n", "ok")
+        elif struct.is_valid and not struct.sync_issues:
+            ins("AGO-Struktur ok.\n", "ok")
         else:
-            ins(f"{len(struct.missing_dirs)} Pflichtordner fehlen:\n\n", "warning")
-            for m in struct.missing_dirs:
-                ins(f"  ✗  {m.relative_path}\n", "error")
+            if struct.missing_dirs:
+                ins(f"{len(struct.missing_dirs)} Pflichtordner fehlen:\n\n", "warning")
+                for m in struct.missing_dirs:
+                    ins(f"  ✗  {m.relative_path}\n", "error")
+                ins("\n")
+            if struct.sync_issues:
+                ins(f"{len(struct.sync_issues)} Zeitstempel-Abweichung(en) gefunden:\n\n", "warning")
 
         # Optionale Ordner: immer anzeigen mit ✓/○
         opt_missing_set = {m.relative_path for m in struct.optional_missing}
