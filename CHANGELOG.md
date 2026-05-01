@@ -5,10 +5,10 @@
 ### Neu
 - **Zeitstempel-Synchronität** – Neue Sektion im AGO-Strukturcheck: erkennt .vwx/.json-Paare, deren Zeitstempel um mehr als 60 Sekunden voneinander abweichen. Bisher wurden diese Fälle fälschlicherweise unter „Dateinamen-Konvention" gemeldet.
 - **Optionale Ordner** im AGO-Strukturcheck zeigen jetzt ✓ (vorhanden) und ○ (fehlt) – analog zur BNO-Prüfung.
-- **About-Dialog** neu gestaltet: App-Icon, Versionsnummer, Entwicklername und direkter „Auf Updates prüfen"-Button.
+- **About-Dialog** neu gestaltet: App-Icon, Versionsnummer.
 
 ### Geändert
-- „Auf Updates prüfen" aus dem Hilfe-Menü in das App-Menü (interiorcad FolderCheck) verschoben; Hilfe-Menü entfernt.
+- About-Dialog zeigt jetzt Versionsnummer und Entwicklername direkt im nativen macOS-Panel.
 
 ---
 
