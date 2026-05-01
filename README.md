@@ -44,6 +44,6 @@ Für alle weiteren Updates empfiehlt sich die integrierte Update-Funktion (**int
 
 Die App prüft nicht automatisch im Hintergrund auf Updates. Manuell prüfen über:
 
-**Menü → interiorcad FolderCheck → Auf Updates prüfen**
+**Menü → Hilfe → Auf Updates prüfen**
 
 Bei verfügbarem Update wird die neue Version direkt heruntergeladen und als DMG geöffnet.
