@@ -4,12 +4,13 @@ Prüft die Ordnerstruktur und Dateibenennung von Vectorworks/interiorcad-Konfigu
 
 ## Funktionen
 
-- **AGO-Prüfung** – Validiert den Arbeitsgruppen-Ordner (Netzlaufwerk) auf korrekte Struktur, fehlende Pflichtordner und ungültige Dateien
+- **AGO-Prüfung** – Validiert den Arbeitsgruppen-Ordner (Netzlaufwerk) auf korrekte Struktur, fehlende Pflichtordner, optionale Ordner und ungültige Dateien
+- **Zeitstempel-Synchronität** – Erkennt .vwx/.json-Paare im AGO/BNO, deren Zeitstempel stark voneinander abweichen
 - **BNO-Prüfung** – Validiert den lokalen Benutzer-Netzwerk-Ordner (`~/Library/Application Support/Vectorworks/…`)
 - **Duplikat-Erkennung** – Findet gleichnamige Dateien in AGO und BNO (AGO hat immer Vorrang)
 - **HTML-Berichte** – Exportierbare Berichte mit detaillierter Fehlerauflistung
 - **Whitelist-Verwaltung** – Bestimmte Dateien oder Erweiterungen dauerhaft ausblenden
-- **Automatische Updates** – Menü → Hilfe → Auf Updates prüfen
+- **Automatische Updates** – Menü → interiorcad FolderCheck → Auf Updates prüfen
 
 ## Systemvoraussetzungen
 
@@ -37,12 +38,12 @@ xattr -d com.apple.quarantine ~/Downloads/interiorcad-FolderCheck.dmg
 
 Danach die DMG normal öffnen und die App in den Programme-Ordner ziehen. Dieser Schritt ist nur bei der manuellen Erstinstallation nötig.
 
-Für alle weiteren Updates empfiehlt sich die integrierte Update-Funktion (**Hilfe → Auf Updates prüfen**) – dort tritt dieses Problem nicht auf.
+Für alle weiteren Updates empfiehlt sich die integrierte Update-Funktion (**interiorcad FolderCheck → Auf Updates prüfen**) – dort tritt dieses Problem nicht auf.
 
 ## Updates
 
 Die App prüft nicht automatisch im Hintergrund auf Updates. Manuell prüfen über:
 
-**Menü → Hilfe → Auf Updates prüfen**
+**Menü → interiorcad FolderCheck → Auf Updates prüfen**
 
 Bei verfügbarem Update wird die neue Version direkt heruntergeladen und als DMG geöffnet.

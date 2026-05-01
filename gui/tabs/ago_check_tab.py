@@ -19,6 +19,7 @@ from core.report import save_report
 from core.ago_checker import (
     check_ago_structure, check_duplicates, check_filenames, check_unexpected_folders,
     StructureResult, DuplicateResult, FilenameResult, FolderCheckResult,
+    AGO_OPTIONAL_DIRS, EXPORTSTARTER_AGO_ROOT,
     shorten_path, area_label,
 )
 
@@ -295,7 +296,7 @@ class AGOCheckTab(ttk.Frame):
         threading.Thread(target=self._run_check, args=(bno, ago), daemon=True).start()
 
     def _run_check(self, bno, ago):
-        struct  = check_ago_structure(ago)
+        struct  = check_ago_structure(ago, bno)
         names   = check_filenames(bno, ago)
         folders = check_unexpected_folders(ago)
         dupes   = check_duplicates(bno, ago)
@@ -320,14 +321,17 @@ class AGOCheckTab(ttk.Frame):
         self._show_folders(folders)
         self._show_duplicates(dupes)
 
-        issues = (len(struct.missing_dirs) + len(names.invalid_files) +
-                  len(folders.unexpected_dirs) + dupes.total_conflicts)
+        issues = (len(struct.missing_dirs) + len(struct.sync_issues) +
+                  len(names.invalid_files) + len(folders.unexpected_dirs) +
+                  dupes.total_conflicts)
         if issues == 0:
             self.status_bar.set("Alles in Ordnung – keine Probleme gefunden", "ok")
         else:
             parts = []
             if struct.missing_dirs:
                 parts.append(f"{len(struct.missing_dirs)} fehlende Pflichtordner")
+            if struct.sync_issues:
+                parts.append(f"{len(struct.sync_issues)} Zeitstempel-Abweichung(en)")
             if names.invalid_files:
                 parts.append(f"{len(names.invalid_files)} ungültige Dateinamen")
             if folders.unexpected_dirs:
@@ -404,11 +408,31 @@ class AGOCheckTab(ttk.Frame):
             for m in struct.missing_dirs:
                 ins(f"  ✗  {m.relative_path}\n", "error")
 
-        if struct.optional_missing:
-            ins("\nHinweis – optionale Ordner nicht vorhanden:\n", "muted")
-            for m in struct.optional_missing:
-                ins(f"  ○  {m.relative_path}\n", "muted")
-            ins("  (Werden nur angelegt wenn tatsächlich genutzt.)\n", "muted")
+        # Optionale Ordner: immer anzeigen mit ✓/○
+        opt_missing_set = {m.relative_path for m in struct.optional_missing}
+        ins("\nOptionale Ordner:\n", "bold")
+        for rel in list(AGO_OPTIONAL_DIRS) + [EXPORTSTARTER_AGO_ROOT]:
+            if rel in opt_missing_set:
+                ins(f"  ○  {rel}\n", "muted")
+            else:
+                ins(f"  ✓  {rel}\n", "ok")
+
+        # Zeitstempel-Synchronität
+        ins("\nZeitstempel-Synchronität:\n", "bold")
+        if struct.sync_issues:
+            ins(f"  {len(struct.sync_issues)} Datei(en) nicht synchron:\n\n", "warning")
+            groups = {}
+            for inv in struct.sync_issues:
+                groups.setdefault(f"{inv.location} / {inv.area}", []).append(inv)
+            for key, items in sorted(groups.items()):
+                ins(f"  {key}  ({len(items)} Treffer):\n", "bold")
+                for inv in items:
+                    ins(f"    {inv.filename}\n", "error")
+                    ins(f"      {inv.reason}\n", "muted")
+                    ins("      ")
+                    self._finder_button(t, inv.full_path, _reveal_label())
+        else:
+            ins("  ok.\n", "ok")
 
         t.config(state="disabled")
 

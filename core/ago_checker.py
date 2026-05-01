@@ -341,6 +341,7 @@ class StructureResult:
     ago_path: str
     missing_dirs: list = field(default_factory=list)
     optional_missing: list = field(default_factory=list)
+    sync_issues: list = field(default_factory=list)
 
     @property
     def is_valid(self) -> bool:
@@ -411,9 +412,64 @@ class FolderCheckResult:
         return bool(self.unexpected_dirs)
 
 
+# ─── Bauteil-Unterordner ohne .json-Pflicht ──────────────────────────────────
+
+_NO_JSON_REQUIRED = {
+    _norm(os.path.join("Bänder", "Geöffnet")),
+    _norm("Profile"),
+    _norm(os.path.join("Profile", "Abplattungen")),
+    _norm(os.path.join("Profile", "Allgemein")),
+    _norm(os.path.join("Profile", "Konter")),
+}
+
+
+def _collect_timestamp_issues(bno_path: str, ago_path: str) -> list:
+    """Gibt InvalidFile-Einträge für .vwx/.json-Paare mit abweichendem Zeitstempel zurück."""
+    issues = []
+    bno_bauteil = os.path.join(bno_path, "Bibliotheken", "Vorgaben", "Bauteil")
+    ago_bauteil = os.path.join(ago_path, "Bibliotheken", "Vorgaben", "Bauteil")
+    for bauteil_root, location in [(bno_bauteil, "BNO"), (ago_bauteil, "AGO")]:
+        if not os.path.isdir(bauteil_root):
+            continue
+        skip = {os.path.join(bauteil_root, "Saved Sets")}
+        files_by_dir: dict = {}
+        for entry in _iter_files(bauteil_root, recursive=True, skip_dirs=skip):
+            files_by_dir.setdefault(os.path.dirname(entry.path), set()).add(entry.name)
+        for dir_path, names in files_by_dir.items():
+            rel = os.path.relpath(dir_path, bauteil_root)
+            if _norm(rel) in _NO_JSON_REQUIRED:
+                continue
+            area = f"Bauteil/{rel}" if rel != "." else "Bauteil"
+            for name in sorted(names):
+                if not _norm(name.lower()).endswith(".vwx"):
+                    continue
+                partner_match = next(
+                    (n for n in names if _norm(n) == _norm(name[:-4] + ".json")), None
+                )
+                if not partner_match:
+                    continue
+                try:
+                    diff = abs(
+                        os.path.getmtime(os.path.join(dir_path, name)) -
+                        os.path.getmtime(os.path.join(dir_path, partner_match))
+                    )
+                    if diff > 60:
+                        mins, secs = int(diff // 60), int(diff % 60)
+                        diff_str = f"{mins}m {secs}s" if mins else f"{secs}s"
+                        issues.append(InvalidFile(
+                            filename=name,
+                            full_path=os.path.join(dir_path, name),
+                            location=location, area=area,
+                            reason=f'Zeitstempel weicht ab ({diff_str}): .vwx und .json sind nicht synchron',
+                        ))
+                except OSError:
+                    pass
+    return issues
+
+
 # ─── 1. AGO-Strukturprüfung ───────────────────────────────────────────────────
 
-def check_ago_structure(ago_path: str) -> StructureResult:
+def check_ago_structure(ago_path: str, bno_path: str = None) -> StructureResult:
     missing = []
     for rel in AGO_REQUIRED_DIRS:
         full = os.path.join(ago_path, rel)
@@ -433,10 +489,13 @@ def check_ago_structure(ago_path: str) -> StructureResult:
             full_path=exportstarter_full,
         ))
 
+    sync_issues = _collect_timestamp_issues(bno_path, ago_path) if bno_path else []
+
     return StructureResult(
         ago_path=ago_path,
         missing_dirs=missing,
         optional_missing=optional_missing,
+        sync_issues=sync_issues,
     )
 
 
@@ -674,14 +733,6 @@ def check_filenames(bno_path: str, ago_path: str) -> FilenameResult:
                 ))
 
     # ── Paar-Check: .vwx ↔ .json in Bauteil/ ────────────────────────────
-    # Unterordner ohne JSON-Pflicht
-    NO_JSON_REQUIRED = {
-        _norm(os.path.join("Bänder", "Geöffnet")),
-        _norm("Profile"),
-        _norm(os.path.join("Profile", "Abplattungen")),
-        _norm(os.path.join("Profile", "Allgemein")),
-        _norm(os.path.join("Profile", "Konter")),
-    }
     for bauteil_root, location, root_path in [
         (bno_bauteil, "BNO", bno_path),
         (ago_bauteil, "AGO", ago_path),
@@ -695,8 +746,7 @@ def check_filenames(bno_path: str, ago_path: str) -> FilenameResult:
 
         for dir_path, names in files_by_dir.items():
             rel = os.path.relpath(dir_path, bauteil_root)
-            # Ordner ohne JSON-Pflicht überspringen
-            if _norm(rel) in NO_JSON_REQUIRED:
+            if _norm(rel) in _NO_JSON_REQUIRED:
                 continue
             area = f"Bauteil/{rel}" if rel != "." else "Bauteil"
             for name in sorted(names):
@@ -712,26 +762,6 @@ def check_filenames(bno_path: str, ago_path: str) -> FilenameResult:
                                 location=location, area=area,
                                 reason=f'Fehlende Begleitdatei: {partner}',
                             ))
-                    else:
-                        # Zeitstempel-Check (Toleranz 5 Sekunden)
-                        vwx_path = os.path.join(dir_path, name)
-                        json_path = os.path.join(dir_path, partner_match)
-                        try:
-                            vwx_mtime = os.path.getmtime(vwx_path)
-                            json_mtime = os.path.getmtime(json_path)
-                            diff = abs(vwx_mtime - json_mtime)
-                            if diff > 60:
-                                mins = int(diff // 60)
-                                secs = int(diff % 60)
-                                diff_str = f"{mins}m {secs}s" if mins else f"{secs}s"
-                                result.invalid_files.append(InvalidFile(
-                                    filename=name,
-                                    full_path=vwx_path,
-                                    location=location, area=area,
-                                    reason=f'Zeitstempel weicht ab ({diff_str}): .vwx und .json sind nicht synchron',
-                                ))
-                        except OSError:
-                            pass
                 elif nl.endswith(".json"):
                     partner = name[:-5] + ".vwx"
                     if not any(_norm(n) == _norm(partner) for n in names):

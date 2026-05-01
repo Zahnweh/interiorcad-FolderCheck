@@ -2,8 +2,10 @@
 gui/app.py – natives macOS-Fenster
 """
 
+import os
+import sys
 import tkinter as tk
-from tkinter import messagebox, ttk
+from tkinter import ttk
 
 from core.version import APP_VERSION
 from .update_dialog import check_for_updates
@@ -12,8 +14,85 @@ from .tabs.ago_check_tab import AGOCheckTab
 from .tabs.bno_check_tab import BNOCheckTab
 
 APP_NAME    = "interiorcad FolderCheck"
+APP_AUTHOR  = "Marcel Ostendorf"
+APP_COMPANY = "extragroup GmbH"
 WIN_WIDTH   = 860
 WIN_HEIGHT  = 1050
+
+
+def _resource_path(filename: str) -> str:
+    if getattr(sys, "frozen", False):
+        base = sys._MEIPASS
+    else:
+        base = os.path.join(os.path.dirname(__file__), "..")
+    return os.path.join(base, filename)
+
+
+class _AboutDialog(tk.Toplevel):
+    _W, _H = 360, 260
+
+    def __init__(self, parent: tk.Misc) -> None:
+        super().__init__(parent)
+        self.title(f"Über {APP_NAME}")
+        self.resizable(False, False)
+        self.transient(parent)
+        self.grab_set()
+
+        px = parent.winfo_rootx() + (parent.winfo_width()  - self._W) // 2
+        py = parent.winfo_rooty() + (parent.winfo_height() - self._H) // 2
+        self.geometry(f"{self._W}x{self._H}+{px}+{py}")
+
+        self._icon_img = None
+        self._build()
+        self.bind("<Return>", lambda _: self.destroy())
+        self.bind("<Escape>", lambda _: self.destroy())
+
+    def _build(self) -> None:
+        # Icon
+        try:
+            from PIL import Image, ImageTk
+            img = Image.open(_resource_path("icon.png")).convert("RGBA")
+            img = img.resize((72, 72), Image.LANCZOS)
+            self._icon_img = ImageTk.PhotoImage(img)
+            tk.Label(self, image=self._icon_img).pack(pady=(20, 6))
+        except Exception:
+            tk.Label(self, text="🖥", font=("Helvetica", 40)).pack(pady=(20, 6))
+
+        tk.Label(
+            self,
+            text=APP_NAME,
+            font=("Helvetica", 15, "bold"),
+        ).pack()
+
+        tk.Label(
+            self,
+            text=f"Version {APP_VERSION}",
+            font=("Helvetica", 11),
+        ).pack(pady=(2, 0))
+
+        tk.Label(
+            self,
+            text=f"{APP_AUTHOR}  ·  © {APP_COMPANY}",
+            font=("Helvetica", 10),
+            fg="gray",
+        ).pack(pady=(4, 0))
+
+        btn_frame = ttk.Frame(self)
+        btn_frame.pack(pady=18)
+        ttk.Button(
+            btn_frame,
+            text="Auf Updates prüfen …",
+            command=self._check_updates,
+        ).pack(side="left", padx=6)
+        ttk.Button(
+            btn_frame,
+            text="Schließen",
+            command=self.destroy,
+        ).pack(side="left", padx=6)
+
+    def _check_updates(self) -> None:
+        self.destroy()
+        check_for_updates(self.master)
 
 
 class AnalyzerApp:
@@ -47,21 +126,13 @@ class AnalyzerApp:
             label=f"Über {APP_NAME}",
             command=self._show_about,
         )
-
-        hilfe_menu = tk.Menu(menubar, tearoff=0)
-        menubar.add_cascade(label="Hilfe", menu=hilfe_menu)
-        hilfe_menu.add_command(
+        app_menu.add_command(
             label="Auf Updates prüfen …",
             command=lambda: check_for_updates(self.root),
         )
 
     def _show_about(self):
-        messagebox.showinfo(
-            f"Über {APP_NAME}",
-            f"{APP_NAME}\nVersion {APP_VERSION}\n\n"
-            "© extragroup GmbH\nmarcel.ostendorf@extragroup.de",
-            parent=self.root,
-        )
+        _AboutDialog(self.root)
 
     def _build_ui(self):
         self.status_bar = StatusBar(self.root)
