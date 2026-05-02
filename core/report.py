@@ -19,8 +19,8 @@ def generate_html(
     def h(s): return html.escape(str(s))
     now = datetime.now().strftime("%d.%m.%Y %H:%M")
 
-    issues = (len(struct.missing_dirs) + len(names.invalid_files) +
-              len(folders.unexpected_dirs) + dupes.total_conflicts)
+    issues = (len(struct.missing_dirs) + len(struct.sync_issues) +
+              len(names.invalid_files) + len(folders.unexpected_dirs) + dupes.total_conflicts)
     status_color = "#28A745" if issues == 0 else "#E07000"
     status_text  = "Keine Probleme gefunden" if issues == 0 else f"{issues} Problem(e) gefunden"
 
@@ -38,6 +38,22 @@ def generate_html(
     for m in struct.optional_missing:
         rows.append(_row("info", f"Optional, nicht vorhanden: {h(m.relative_path)}"))
     sections.append(_section("AGO-Struktur", rows))
+
+    # ── Zeitstempel-Synchronität ──────────────────────────────────────────
+    rows = []
+    if not struct.sync_issues:
+        rows.append(_row("ok", "Alle Zeitstempel synchron"))
+    else:
+        groups = {}
+        for inv in struct.sync_issues:
+            groups.setdefault(f"{h(inv.location)} / {h(inv.area)}", []).append(inv)
+        for key, items in sorted(groups.items()):
+            for inv in items:
+                rows.append(_row("error",
+                    f"<strong>{h(inv.filename)}</strong> &nbsp;– {key}<br>"
+                    f"<span class='reason'>{h(inv.reason)}</span>"
+                ))
+    sections.append(_section("Zeitstempel-Synchronität", rows))
 
     # ── Dateinamen ────────────────────────────────────────────────────────
     rows = []

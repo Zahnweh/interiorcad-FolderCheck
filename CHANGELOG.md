@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.2.1 (2026-05-02)
+
+### Behoben
+- **HTML-Bericht**: Zeitstempel-Abweichungen wurden weder angezeigt noch in der Problemzählung berücksichtigt – der Bericht zeigte „Keine Probleme" obwohl Sync-Fehler vorhanden waren.
+
+---
+
 ## 1.2.0 (2026-05-02)
 
 ### Neu
