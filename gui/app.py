@@ -62,19 +62,6 @@ class AnalyzerApp:
 
         app_menu = tk.Menu(menubar, name="apple", tearoff=0)
         menubar.add_cascade(menu=app_menu)
-        app_menu.add_command(
-            label="Einstellungen …",
-            command=self._open_settings,
-            accelerator="Command+,",
-        )
-
-        einstellungen_menu = tk.Menu(menubar, tearoff=0)
-        menubar.add_cascade(label="Einstellungen", menu=einstellungen_menu)
-        einstellungen_menu.add_command(
-            label="Einstellungen …",
-            command=self._open_settings,
-            accelerator="Command+," if platform.system() == "Darwin" else "Ctrl+,",
-        )
 
         hilfe_menu = tk.Menu(menubar, tearoff=0)
         menubar.add_cascade(label="Hilfe", menu=hilfe_menu)
@@ -82,6 +69,19 @@ class AnalyzerApp:
             label="Auf Updates prüfen …",
             command=lambda: check_for_updates(self.root),
         )
+        if platform.system() == "Windows":
+            hilfe_menu.add_separator()
+            hilfe_menu.add_command(
+                label="Einstellungen …",
+                command=self._open_settings,
+                accelerator="Ctrl+,",
+            )
+
+        # macOS: Preferences…-Eintrag im App-Menü aktivieren
+        if platform.system() == "Darwin":
+            self.root.createcommand(
+                "::tk::mac::ShowPreferences", self._open_settings
+            )
 
         self.root.bind("<Command-comma>", lambda _: self._open_settings())
         self.root.bind("<Control-comma>", lambda _: self._open_settings())
