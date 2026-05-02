@@ -62,11 +62,19 @@ pyinstaller \
 
 APP="$DIR/dist/interiorcad FolderCheck.app"
 
+# Version aus core/version.py lesen
+VERSION=$(python3 -c "import sys; sys.path.insert(0, '$DIR'); from core.version import APP_VERSION; print(APP_VERSION)")
+echo "Version: $VERSION"
+
 # Icon explizit ins Bundle kopieren
 echo "Setze App-Icon..."
 cp icon.icns "$APP/Contents/Resources/icon.icns"
 # Info.plist anpassen
 /usr/libexec/PlistBuddy -c "Set :CFBundleIconFile icon.icns" "$APP/Contents/Info.plist" 2>/dev/null || true
+/usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $VERSION" "$APP/Contents/Info.plist" 2>/dev/null || true
+/usr/libexec/PlistBuddy -c "Set :CFBundleVersion $VERSION" "$APP/Contents/Info.plist" 2>/dev/null || true
+/usr/libexec/PlistBuddy -c "Set :NSHumanReadableCopyright Marcel Ostendorf, extragroup GmbH" "$APP/Contents/Info.plist" 2>/dev/null || \
+/usr/libexec/PlistBuddy -c "Add :NSHumanReadableCopyright string Marcel Ostendorf, extragroup GmbH" "$APP/Contents/Info.plist" 2>/dev/null || true
 touch "$APP"
 
 # Ad-hoc-Signatur setzen (kein Apple-Developer-Account nötig).

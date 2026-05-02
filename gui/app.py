@@ -7,7 +7,7 @@ from tkinter import ttk
 
 from core.version import APP_VERSION  # noqa: F401 (für Info.plist-Pendant im Build)
 from .update_dialog import check_for_updates
-from .widgets import apply_macos_style, StatusBar
+from .widgets import apply_platform_style, StatusBar
 from .tabs.ago_check_tab import AGOCheckTab
 from .tabs.bno_check_tab import BNOCheckTab
 
@@ -31,7 +31,7 @@ class AnalyzerApp:
         y = (sh - WIN_HEIGHT) // 2
         self.root.geometry(f"{WIN_WIDTH}x{WIN_HEIGHT}+{x}+{y}")
 
-        apply_macos_style(self.root)
+        apply_platform_style(self.root)
         self._build_menu()
         self._build_ui()
 

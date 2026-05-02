@@ -5,6 +5,7 @@ core/updater.py – Update-Prüfung via GitHub Releases API.
 import json
 import os
 import ssl
+import sys
 import urllib.request
 from urllib.error import URLError
 
@@ -48,10 +49,11 @@ def fetch_latest_release() -> dict | None:
     tag = data.get("tag_name", "")
     body = data.get("body", "")
 
+    ext = ".exe" if sys.platform == "win32" else ".dmg"
     download_url = None
     for asset in data.get("assets", []):
         name = asset.get("name", "")
-        if name.endswith(".dmg"):
+        if name.endswith(ext):
             download_url = asset.get("browser_download_url")
             break
 

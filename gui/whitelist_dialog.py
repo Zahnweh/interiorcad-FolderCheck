@@ -8,6 +8,7 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 
 from gui import theme as T
+from gui.widgets import style_toplevel
 from core.user_whitelist import (
     add_entry, remove_entry, load_whitelist, entry_label,
     make_exact_file, make_ext_in_dir, make_allow_dir, make_ignore_dir,
@@ -28,7 +29,8 @@ class AddToWhitelistDialog(tk.Toplevel):
 
         self.title("Zur Whitelist hinzufügen")
         self.resizable(False, False)
-        self.grab_set()  # Modal
+        self.grab_set()
+        style_toplevel(self)
 
         self._build_ui()
 
@@ -124,6 +126,7 @@ class WhitelistManagerDialog(tk.Toplevel):
         self.title("Whitelist verwalten")
         self.geometry("680x420")
         self.grab_set()
+        style_toplevel(self)
 
         self.update_idletasks()
         px = parent.winfo_rootx() + (parent.winfo_width()  - 680) // 2

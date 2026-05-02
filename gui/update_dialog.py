@@ -11,6 +11,12 @@ from tkinter import messagebox, ttk
 
 from core.updater import download_file, fetch_latest_release, is_update_available
 from core.version import APP_VERSION
+from gui import theme as T
+from gui.widgets import style_toplevel
+
+# Guards gegen doppelte Ausführung
+_check_running = False
+_active_dialog: tk.Toplevel | None = None
 
 
 def check_for_updates(parent: tk.Misc, *, silent: bool = False) -> None:
@@ -18,11 +24,33 @@ def check_for_updates(parent: tk.Misc, *, silent: bool = False) -> None:
     Prüft auf Updates im Hintergrund.
     silent=True: Dialog nur anzeigen, wenn ein Update verfügbar ist.
     """
+    global _check_running, _active_dialog
+
+    # Läuft gerade schon ein Check?
+    if _check_running:
+        return
+
+    # Ist der Dialog schon offen? Dann nur in den Vordergrund holen.
+    if _active_dialog is not None:
+        try:
+            if _active_dialog.winfo_exists():
+                _active_dialog.lift()
+                _active_dialog.focus_force()
+                return
+        except tk.TclError:
+            pass
+        _active_dialog = None
+
+    _check_running = True
+
     def _fetch():
         release = fetch_latest_release()
         parent.after(0, lambda: _on_result(release))
 
     def _on_result(release):
+        global _check_running, _active_dialog
+        _check_running = False
+
         if release is None:
             if not silent:
                 messagebox.showinfo(
@@ -42,7 +70,7 @@ def check_for_updates(parent: tk.Misc, *, silent: bool = False) -> None:
                 )
             return
 
-        _UpdateDialog(parent, release)
+        _active_dialog = _UpdateDialog(parent, release)
 
     threading.Thread(target=_fetch, daemon=True).start()
 
@@ -56,10 +84,12 @@ class _UpdateDialog(tk.Toplevel):
         self.resizable(False, False)
         self.transient(parent)
         self.grab_set()
+        style_toplevel(self)
         self._release = release
         self._downloading = False
 
-        # Zentrieren über dem Parent-Fenster
+        self.protocol("WM_DELETE_WINDOW", self._on_close)
+
         self.update_idletasks()
         px = parent.winfo_rootx() + (parent.winfo_width()  - self._W) // 2
         py = parent.winfo_rooty() + (parent.winfo_height() - self._H) // 2
@@ -67,19 +97,27 @@ class _UpdateDialog(tk.Toplevel):
 
         self._build()
 
+    def _on_close(self) -> None:
+        global _active_dialog
+        _active_dialog = None
+        self.destroy()
+
     def _build(self) -> None:
         r = self._release
 
+        _lbl = {"bg": T.BG_MAIN, "fg": T.FG_PRIMARY} if T.IS_WINDOWS else {}
         tk.Label(
             self,
             text=f"Neue Version verfügbar: {r['version']}",
-            font=("Helvetica", 15, "bold"),
+            font=T.FONT_HEADING,
+            **_lbl,
         ).pack(pady=(20, 2))
 
         tk.Label(
             self,
             text=f"Installierte Version: {APP_VERSION}",
-            font=("Helvetica", 11),
+            font=T.FONT_SMALL,
+            **_lbl,
         ).pack(pady=(0, 10))
 
         # Release-Notes
@@ -88,18 +126,23 @@ class _UpdateDialog(tk.Toplevel):
 
         vsb = ttk.Scrollbar(notes_frame)
         vsb.pack(side="right", fill="y")
+        if T.IS_WINDOWS:
+            _txt_colors = dict(bg=T.TEXT_BG, fg=T.TEXT_FG,
+                               selectbackground=T.TEXT_SEL_BG, selectforeground=T.TEXT_SEL_FG,
+                               insertbackground=T.TEXT_CURSOR)
+        else:
+            _txt_colors = dict(bg="systemTextBackgroundColor", fg="systemTextColor",
+                               selectbackground="systemSelectedTextBackgroundColor",
+                               selectforeground="systemSelectedTextColor",
+                               insertbackground="systemTextColor")
         txt = tk.Text(
             notes_frame,
             height=9,
             wrap="word",
             relief="flat",
-            font=("Helvetica", 11),
-            bg="systemTextBackgroundColor",
-            fg="systemTextColor",
-            selectbackground="systemSelectedTextBackgroundColor",
-            selectforeground="systemSelectedTextColor",
-            insertbackground="systemTextColor",
+            font=T.FONT_SMALL,
             yscrollcommand=vsb.set,
+            **_txt_colors,
         )
         txt.pack(side="left", fill="both", expand=True)
         vsb.config(command=txt.yview)
@@ -112,14 +155,14 @@ class _UpdateDialog(tk.Toplevel):
         ttk.Progressbar(self, variable=self._progress_var, maximum=100).pack(
             fill="x", padx=20, pady=(10, 2)
         )
-        tk.Label(self, textvariable=self._progress_lbl, font=("Helvetica", 10)).pack()
+        tk.Label(self, textvariable=self._progress_lbl, font=T.FONT_SMALL, **_lbl).pack()
 
         # Buttons
         btn_frame = ttk.Frame(self)
         btn_frame.pack(pady=10)
         self._btn_dl = ttk.Button(btn_frame, text="Jetzt herunterladen", command=self._start_download)
         self._btn_dl.pack(side="left", padx=6)
-        ttk.Button(btn_frame, text="Abbrechen", command=self.destroy).pack(side="left", padx=6)
+        ttk.Button(btn_frame, text="Abbrechen", command=self._on_close).pack(side="left", padx=6)
 
     # ------------------------------------------------------------------
     def _start_download(self) -> None:
@@ -127,7 +170,7 @@ class _UpdateDialog(tk.Toplevel):
         if not url:
             messagebox.showerror(
                 "Fehler",
-                "Kein DMG-Download-Link im GitHub-Release gefunden.\n"
+                "Kein Download-Link im GitHub-Release gefunden.\n"
                 "Bitte manuell auf GitHub aktualisieren.",
                 parent=self,
             )
@@ -135,7 +178,8 @@ class _UpdateDialog(tk.Toplevel):
 
         self._btn_dl.config(state="disabled")
         version  = self._release["version"]
-        filename = f"interiorcad-FolderCheck-{version}.dmg"
+        ext      = ".exe" if sys.platform == "win32" else ".dmg"
+        filename = f"interiorcad-FolderCheck-{version}{ext}"
         dest     = os.path.join(os.path.expanduser("~/Downloads"), filename)
 
         self._progress_lbl.set("Lade Update herunter …")
@@ -171,23 +215,37 @@ class _UpdateDialog(tk.Toplevel):
         self._progress_var.set(100)
         self._progress_lbl.set("Download abgeschlossen.")
 
-        # Quarantäne-Flag entfernen, damit Gatekeeper das DMG nicht blockiert
-        subprocess.call(
-            ["xattr", "-d", "com.apple.quarantine", dest],
-            stderr=subprocess.DEVNULL,
-        )
-
-        # DMG öffnen (Finder mountet es automatisch)
-        subprocess.call(["open", dest])
-
-        answer = messagebox.askyesno(
-            "Update bereit",
-            f"Das Update wurde heruntergeladen und geöffnet:\n{dest}\n\n"
-            "Ziehe die App aus dem DMG-Fenster in den Programme-Ordner "
-            "und starte sie danach neu.\n\n"
-            "Soll interiorcad FolderCheck jetzt beendet werden?",
-            parent=self,
-        )
-        if answer:
-            self.destroy()
-            self.master.after(200, self.master.winfo_toplevel().destroy)
+        if sys.platform == "win32":
+            answer = messagebox.askyesno(
+                "Update bereit",
+                f"Das Update wurde heruntergeladen:\n{dest}\n\n"
+                "Soll interiorcad FolderCheck jetzt beendet werden, "
+                "um den Installer zu starten?\n\n"
+                "Die neue Version ersetzt dabei die alte automatisch.",
+                parent=self,
+            )
+            if answer:
+                self._on_close()
+                root = self.master.winfo_toplevel()
+                def _quit_and_install():
+                    os.startfile(dest)
+                    root.destroy()
+                root.after(200, _quit_and_install)
+        else:
+            # Quarantäne-Flag entfernen, damit Gatekeeper das DMG nicht blockiert
+            subprocess.call(
+                ["xattr", "-d", "com.apple.quarantine", dest],
+                stderr=subprocess.DEVNULL,
+            )
+            subprocess.call(["open", dest])
+            answer = messagebox.askyesno(
+                "Update bereit",
+                f"Das Update wurde heruntergeladen und geöffnet:\n{dest}\n\n"
+                "Ziehe die App aus dem DMG-Fenster in den Programme-Ordner "
+                "und starte sie danach neu.\n\n"
+                "Soll interiorcad FolderCheck jetzt beendet werden?",
+                parent=self,
+            )
+            if answer:
+                self._on_close()
+                self.master.after(200, self.master.winfo_toplevel().destroy)
