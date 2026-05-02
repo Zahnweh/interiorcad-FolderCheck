@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.2.2 (2026-05-02)
+
+### Behoben
+- **Windows-Update**: Die neue Version wurde aus dem Downloads-Ordner gestartet statt die alte zu ersetzen. Ein PowerShell-Skript kopiert die neue `.exe` jetzt über die alte und startet sie vom ursprünglichen Speicherort.
+
+---
+
 ## 1.2.1 (2026-05-02)
 
 ### Behoben

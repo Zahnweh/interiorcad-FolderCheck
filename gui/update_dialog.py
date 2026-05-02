@@ -14,6 +14,47 @@ from core.version import APP_VERSION
 from gui import theme as T
 from gui.widgets import style_toplevel
 
+def _launch_win_updater(new_exe: str) -> None:
+    """
+    Startet ein PowerShell-Skript das im Hintergrund weiterläuft,
+    die neue .exe über die alte kopiert und sie dann vom Originalort startet.
+    Fallback (Entwicklungsmodus / Kopieren schlägt fehl): startet aus Downloads.
+    """
+    import tempfile
+
+    # sys.frozen ist True wenn die App als PyInstaller-Bundle läuft
+    current_exe = sys.executable if getattr(sys, "frozen", False) else None
+
+    if current_exe:
+        ps = (
+            "param($src, $dst)\n"
+            "Start-Sleep 2\n"
+            "try {\n"
+            "    Copy-Item -Force $src $dst\n"
+            "    Start-Process $dst\n"
+            "} catch {\n"
+            "    Start-Process $src\n"
+            "}\n"
+            "Remove-Item -LiteralPath $PSCommandPath -Force\n"
+        )
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".ps1", delete=False, encoding="utf-8"
+        ) as f:
+            f.write(ps)
+            ps_path = f.name
+
+        subprocess.Popen(
+            [
+                "powershell", "-ExecutionPolicy", "Bypass",
+                "-WindowStyle", "Hidden", "-File", ps_path,
+                "-src", new_exe, "-dst", current_exe,
+            ],
+            creationflags=subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP,
+        )
+    else:
+        os.startfile(new_exe)
+
+
 # Guards gegen doppelte Ausführung
 _check_running = False
 _active_dialog: tk.Toplevel | None = None
@@ -228,7 +269,7 @@ class _UpdateDialog(tk.Toplevel):
                 self._on_close()
                 root = self.master.winfo_toplevel()
                 def _quit_and_install():
-                    os.startfile(dest)
+                    _launch_win_updater(dest)
                     root.destroy()
                 root.after(200, _quit_and_install)
         else:
