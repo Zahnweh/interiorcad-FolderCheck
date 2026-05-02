@@ -4,7 +4,7 @@ echo === interiorcad FolderCheck - Windows Build ===
 cd /d "%~dp0"
 
 echo Pruefe Abhaengigkeiten...
-pip install pyinstaller pillow --quiet
+pip install pyinstaller pillow certifi plyer --quiet
 if errorlevel 1 (
     echo FEHLER: pip nicht gefunden. Bitte Python 3.9+ installieren.
     pause & exit /b 1

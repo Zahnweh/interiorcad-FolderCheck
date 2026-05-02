@@ -10,7 +10,7 @@ OUTPUT_DIR="/Users/marcelostendorf/Documents/Eigene Apps/interiorcad FolderCheck
 
 # 1. Abhängigkeiten
 echo "Prüfe Abhängigkeiten..."
-pip3 install pyinstaller pillow certifi --quiet --break-system-packages 2>/dev/null || true
+pip3 install pyinstaller pillow certifi plyer --quiet --break-system-packages 2>/dev/null || true
 
 # 2. Icon erstellen
 if [ ! -f "icon.icns" ]; then
