@@ -68,19 +68,20 @@ class AnalyzerApp:
             accelerator="Command+,",
         )
 
+        einstellungen_menu = tk.Menu(menubar, tearoff=0)
+        menubar.add_cascade(label="Einstellungen", menu=einstellungen_menu)
+        einstellungen_menu.add_command(
+            label="Einstellungen …",
+            command=self._open_settings,
+            accelerator="Command+," if platform.system() == "Darwin" else "Ctrl+,",
+        )
+
         hilfe_menu = tk.Menu(menubar, tearoff=0)
         menubar.add_cascade(label="Hilfe", menu=hilfe_menu)
         hilfe_menu.add_command(
             label="Auf Updates prüfen …",
             command=lambda: check_for_updates(self.root),
         )
-        if platform.system() == "Windows":
-            hilfe_menu.add_separator()
-            hilfe_menu.add_command(
-                label="Einstellungen …",
-                command=self._open_settings,
-                accelerator="Ctrl+,",
-            )
 
         self.root.bind("<Command-comma>", lambda _: self._open_settings())
         self.root.bind("<Control-comma>", lambda _: self._open_settings())
