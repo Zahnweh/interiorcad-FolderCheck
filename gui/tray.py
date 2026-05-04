@@ -88,22 +88,34 @@ class TrayIcon:
         )
 
         if platform.system() == "Darwin":
-            # _assert_image patchen: nach jedem NSImage-Neuaufbau Template-Flag setzen.
-            # Direkt auf _icon_image (pystray-intern) – zuverlässiger als btn.image().
-            _orig = self._icon._assert_image
-            _ref  = self._icon
-            def _patched():
-                _orig()
-                try:
-                    if _ref._icon_image is not None:
-                        _ref._icon_image.setTemplate_(True)
-                        _ref._status_item.button().setImage_(_ref._icon_image)
-                except Exception:
-                    pass
-            self._icon._assert_image = _patched
+            _icon_ref = self._icon
 
             def _setup(icon):
                 icon.visible = True
+                # pystray's PIL-Resize ergibt unscharfe Pixel.
+                # Stattdessen: Icon direkt via AppKit laden und als
+                # Template Image setzen – macOS rendert es dann nativ.
+                try:
+                    import AppKit
+                    root_dir = Path(__file__).parent.parent
+                    meipass  = Path(getattr(sys, "_MEIPASS", ""))
+                    for p in [
+                        root_dir / "icon_tray_bk.png",
+                        meipass  / "icon_tray_bk.png",
+                        root_dir / "icon.png",
+                        meipass  / "icon.png",
+                    ]:
+                        if p.exists():
+                            ns_img = AppKit.NSImage.alloc().initWithContentsOfFile_(str(p))
+                            if ns_img:
+                                ns_img.setTemplate_(True)
+                                _icon_ref._status_item.button().setImage_(ns_img)
+                                # _assert_image deaktivieren – unser Bild soll bleiben
+                                _icon_ref._assert_image = lambda: None
+                            break
+                except Exception:
+                    pass
+
             self._icon.run_detached(setup=_setup)
         else:
             # Windows: run() in eigenem Thread
