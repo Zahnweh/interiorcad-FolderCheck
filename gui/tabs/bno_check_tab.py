@@ -21,6 +21,7 @@ from gui import theme as T
 from gui.widgets import make_scrolled_text, StatusBar, SectionHeader
 from core.detector import detect_all_installations
 from core.prefs import get_pref, set_pref
+from core.notifier import notify
 from core.bno_checker import (
     check_bno_structure, check_bno_filenames, check_bno_unexpected_folders,
     BNOStructureResult, BNOFilenameResult, BNOFolderResult,
@@ -352,7 +353,7 @@ class BNOCheckTab(ttk.Frame):
         struct  = check_bno_structure(bno)
         names   = check_bno_filenames(bno)
         folders = check_bno_unexpected_folders(bno)
-        self.after(0, self._show_results, struct, names, folders)
+        self.after(0, lambda: self._show_results(struct, names, folders, notify_ok=True))
 
     # ── Anzeige ───────────────────────────────────────────────────────────
 
@@ -367,7 +368,8 @@ class BNOCheckTab(ttk.Frame):
 
     def _show_results(self, struct: BNOStructureResult,
                       names: BNOFilenameResult,
-                      folders: BNOFolderResult):
+                      folders: BNOFolderResult,
+                      notify_ok: bool = False):
         self._last_results = (struct, names, folders)
         self._export_btn.config(state="normal")
         self._show_structure(struct)
@@ -378,6 +380,8 @@ class BNOCheckTab(ttk.Frame):
                   len(folders.unexpected_dirs))
         if issues == 0:
             self.status_bar.set("BNO: Alles in Ordnung – keine Probleme gefunden", "ok")
+            if notify_ok:
+                notify("interiorcad FolderCheck", "BNO: Alles in Ordnung – keine Probleme gefunden")
         else:
             parts = []
             if struct.missing_dirs:

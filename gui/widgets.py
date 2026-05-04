@@ -92,6 +92,21 @@ def _apply_win11_dark(root: tk.Tk, style: ttk.Style) -> None:
         background=[("active", "#606060"), ("pressed", "#707070")],
     )
 
+    style.configure("TRadiobutton",
+        background=T.BG_MAIN, foreground=T.FG_PRIMARY, focuscolor=T.BG_MAIN,
+    )
+    style.map("TRadiobutton",
+        background=[("active", T.BG_MAIN)],
+        foreground=[("active", T.FG_PRIMARY)],
+    )
+    style.configure("TCheckbutton",
+        background=T.BG_MAIN, foreground=T.FG_PRIMARY, focuscolor=T.BG_MAIN,
+    )
+    style.map("TCheckbutton",
+        background=[("active", T.BG_MAIN)],
+        foreground=[("active", T.FG_PRIMARY)],
+    )
+
     style.configure("TSeparator",   background=T.BORDER)
     style.configure("TPanedwindow", background=T.BG_MAIN)
     style.configure("Sash",         sashthickness=5, background=T.BORDER)

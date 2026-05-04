@@ -2,6 +2,8 @@
 """
 VW/interiorcad AGO/BNO Struktur-Analyzer
 Haupteinstiegspunkt
+
+--background  App ohne sichtbares Fenster starten (für Autostart beim Login)
 """
 
 import sys
@@ -15,5 +17,6 @@ os.chdir(_HERE)
 from gui.app import AnalyzerApp
 
 if __name__ == "__main__":
-    app = AnalyzerApp()
+    start_hidden = "--background" in sys.argv
+    app = AnalyzerApp(start_hidden=start_hidden)
     app.run()
