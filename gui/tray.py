@@ -117,11 +117,12 @@ class TrayIcon:
 
             def _setup(icon):
                 icon.visible = True
-                # AppKit-Manipulation muss auf dem Hauptthread laufen
-                if self._after_fn:
-                    self._after_fn(200, _apply_template)
 
             self._icon.run_detached(setup=_setup)
+            # after() hier auf dem Hauptthread aufrufen (run_detached kehrt sofort zurück).
+            # Aus dem Setup-Thread wäre after() nicht threadsicher → wird nie ausgeführt.
+            if self._after_fn:
+                self._after_fn(200, _apply_template)
         else:
             # Windows: run() in eigenem Thread
             self._thread = threading.Thread(
