@@ -1,4 +1,4 @@
-APP_VERSION = "2.0.0"
+APP_VERSION = "2.0.1"
 
 # GitHub-Repository für automatische Updates
 GITHUB_OWNER = "Zahnweh"

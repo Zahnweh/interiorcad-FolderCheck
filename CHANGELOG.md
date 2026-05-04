@@ -1,5 +1,15 @@
 # Changelog
 
+## 2.0.1 (2026-05-04)
+
+### Behoben
+- **Tray „Jetzt prüfen"** prüft jetzt sichtbar beide Tabs (AGO und BNO) und aktualisiert die UI für beide.
+- **Benachrichtigung bei Problemen** erscheint jetzt auch nach einer manuellen Prüfung über das Hauptfenster.
+- **Windows-Updater**: Der Prozess wartet jetzt via PID bis die App vollständig beendet ist, bevor die neue EXE kopiert wird – behebt den Fall wo die App sich schloss, aber kein Neustart folgte.
+- **Interner Versionsstand** der 2.0.0-Builds korrigiert (wurde mit 1.2.2 ausgeliefert, was eine Update-Schleife verursachte).
+
+---
+
 ## 2.0.0 (2026-05-04)
 
 ### Neu
