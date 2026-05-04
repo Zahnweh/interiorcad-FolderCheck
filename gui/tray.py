@@ -45,10 +45,11 @@ class TrayIcon:
     quit_cb         : beendet die App vollständig
     """
 
-    def __init__(self, show_window_cb, run_once_cb, quit_cb):
+    def __init__(self, show_window_cb, run_once_cb, quit_cb, after_fn=None):
         self._show_window = show_window_cb
         self._run_once    = run_once_cb
         self._quit        = quit_cb
+        self._after_fn    = after_fn   # root.after – für Hauptthread-Dispatch
         self._icon: "pystray.Icon | None" = None
         self._thread: threading.Thread | None = None
 
@@ -90,11 +91,8 @@ class TrayIcon:
         if platform.system() == "Darwin":
             _icon_ref = self._icon
 
-            def _setup(icon):
-                icon.visible = True
-                # pystray's PIL-Resize ergibt unscharfe Pixel.
-                # Stattdessen: Icon direkt via AppKit laden und als
-                # Template Image setzen – macOS rendert es dann nativ.
+            def _apply_template():
+                """Läuft auf dem Hauptthread (via root.after)."""
                 try:
                     import AppKit
                     root_dir = Path(__file__).parent.parent
@@ -110,11 +108,16 @@ class TrayIcon:
                             if ns_img:
                                 ns_img.setTemplate_(True)
                                 _icon_ref._status_item.button().setImage_(ns_img)
-                                # _assert_image deaktivieren – unser Bild soll bleiben
                                 _icon_ref._assert_image = lambda: None
                             break
                 except Exception:
                     pass
+
+            def _setup(icon):
+                icon.visible = True
+                # AppKit-Manipulation muss auf dem Hauptthread laufen
+                if self._after_fn:
+                    self._after_fn(200, _apply_template)
 
             self._icon.run_detached(setup=_setup)
         else:

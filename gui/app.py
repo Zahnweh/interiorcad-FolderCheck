@@ -123,6 +123,7 @@ class AnalyzerApp:
             show_window_cb=lambda: self.root.after(50, self._show_window),
             run_once_cb=lambda: self.root.after(50, self._monitor.run_once),
             quit_cb=lambda: os._exit(0),
+            after_fn=self.root.after,
         )
         if get_pref("monitor_enabled", False):
             self._tray.start()
