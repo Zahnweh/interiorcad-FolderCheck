@@ -118,5 +118,7 @@ class TrayIcon:
         self._run_once()
 
     def _on_quit(self, icon, item) -> None:
-        self.stop()
+        # stop() nicht aufrufen – auf macOS würde pystray dabei NSApp stoppen,
+        # der Tkinter gehört → Crash. root.destroy() beendet den Prozess sauber.
+        self._icon = None
         self._quit()
