@@ -18,20 +18,31 @@ except ImportError:
     _PYSTRAY_AVAILABLE = False
 
 
+_TRAY_ICON_NAMES = [
+    "icon_tray_Template.png",
+    "icon_tray_bk.png",
+]
+
+def _find_tray_icon() -> "Path | None":
+    root    = Path(__file__).parent.parent
+    meipass = Path(getattr(sys, "_MEIPASS", ""))
+    for name in _TRAY_ICON_NAMES:
+        for base in (root, meipass):
+            p = base / name
+            if p.exists():
+                return p
+    return None
+
+
 def _load_icon_image() -> "PILImage.Image | None":
     """Temporärer PIL-Platzhalter für pystray – wird via AppKit ersetzt."""
     if not _PYSTRAY_AVAILABLE:
         return None
-    root    = Path(__file__).parent.parent
-    meipass = Path(getattr(sys, "_MEIPASS", ""))
-    # Immer schwarze Variante: auf dunklem Hintergrund unsichtbar,
-    # kein weißer Balken während AppKit das echte Template-Icon setzt.
-    for p in [root / "icon_tray_bk.png", meipass / "icon_tray_bk.png",
-              root / "icon.png",         meipass / "icon.png"]:
-        if p.exists():
-            img = PILImage.open(p).convert("RGBA")
-            img = img.resize((22, 22), PILImage.LANCZOS)
-            return img
+    p = _find_tray_icon()
+    if p:
+        img = PILImage.open(p).convert("RGBA")
+        img = img.resize((22, 22), PILImage.LANCZOS)
+        return img
     return PILImage.new("RGBA", (22, 22), (0, 0, 0, 255))
 
 
@@ -97,12 +108,8 @@ class TrayIcon:
                 root_dir = Path(__file__).parent.parent
                 meipass  = Path(getattr(sys, "_MEIPASS", ""))
                 try:
-                    for p in [
-                        root_dir / "icon_tray_bk.png",
-                        meipass  / "icon_tray_bk.png",
-                        root_dir / "icon.png",
-                        meipass  / "icon.png",
-                    ]:
+                    p = _find_tray_icon()
+                    for p in ([p] if p else []):
                         if not p.exists():
                             continue
                         # PIL für korrektes Alpha-Handling laden,
