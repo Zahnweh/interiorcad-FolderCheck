@@ -104,14 +104,12 @@ class TrayIcon:
                         if p.exists():
                             ns_img = AppKit.NSImage.alloc().initWithContentsOfFile_(str(p))
                             if ns_img and ns_img.size().width > 0:
+                                from Foundation import NSMakeSize
+                                ns_img.setSize_(NSMakeSize(18, 18))
                                 ns_img.setTemplate_(True)
                                 _icon_ref._status_item.button().setImage_(ns_img)
                                 _icon_ref._assert_image = lambda: None
-                            else:
-                                print(f"[tray] NSImage leer für {p}")
                             break
-                    else:
-                        print("[tray] Kein Icon-File gefunden")
                 except Exception:
                     traceback.print_exc()
 
