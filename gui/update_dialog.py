@@ -26,16 +26,20 @@ def _launch_win_updater(new_exe: str) -> None:
     current_exe = sys.executable if getattr(sys, "frozen", False) else None
 
     if current_exe:
+        pid = os.getpid()
         ps = (
-            "param($src, $dst)\n"
-            "Start-Sleep 2\n"
+            "param($src, $dst, $pid)\n"
+            # Warten bis der alte Prozess vollständig beendet ist
+            "try { $p = Get-Process -Id $pid -ErrorAction Stop\n"
+            "      $p.WaitForExit(10000) | Out-Null } catch {}\n"
+            "Start-Sleep 1\n"
             "try {\n"
             "    Copy-Item -Force $src $dst\n"
             "    Start-Process $dst\n"
             "} catch {\n"
             "    Start-Process $src\n"
             "}\n"
-            "Remove-Item -LiteralPath $PSCommandPath -Force\n"
+            "Remove-Item -LiteralPath $PSCommandPath -Force -ErrorAction SilentlyContinue\n"
         )
         with tempfile.NamedTemporaryFile(
             mode="w", suffix=".ps1", delete=False, encoding="utf-8"
@@ -47,7 +51,7 @@ def _launch_win_updater(new_exe: str) -> None:
             [
                 "powershell", "-ExecutionPolicy", "Bypass",
                 "-WindowStyle", "Hidden", "-File", ps_path,
-                "-src", new_exe, "-dst", current_exe,
+                "-src", new_exe, "-dst", current_exe, "-pid", str(pid),
             ],
             creationflags=subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP,
         )
@@ -270,7 +274,7 @@ class _UpdateDialog(tk.Toplevel):
                 root = self.master.winfo_toplevel()
                 def _quit_and_install():
                     _launch_win_updater(dest)
-                    root.destroy()
+                    os._exit(0)
                 root.after(200, _quit_and_install)
         else:
             # Quarantäne-Flag entfernen, damit Gatekeeper das DMG nicht blockiert
