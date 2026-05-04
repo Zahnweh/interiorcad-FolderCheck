@@ -2,6 +2,7 @@
 gui/app.py
 """
 
+import os
 import platform
 import tkinter as tk
 from tkinter import ttk
@@ -121,7 +122,7 @@ class AnalyzerApp:
         self._tray = TrayIcon(
             show_window_cb=lambda: self.root.after(0, self._show_window),
             run_once_cb=lambda: self.root.after(0, self._monitor.run_once),
-            quit_cb=lambda: self.root.after(0, self.root.quit),
+            quit_cb=lambda: os._exit(0),
         )
         if get_pref("monitor_enabled", False):
             self._tray.start()
