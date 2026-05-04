@@ -120,8 +120,8 @@ class AnalyzerApp:
     def _setup_tray(self) -> None:
         # Alle Callbacks müssen im Tk-Hauptthread laufen
         self._tray = TrayIcon(
-            show_window_cb=lambda: self.root.after(0, self._show_window),
-            run_once_cb=lambda: self.root.after(0, self._monitor.run_once),
+            show_window_cb=lambda: self.root.after(50, self._show_window),
+            run_once_cb=lambda: self.root.after(50, self._monitor.run_once),
             quit_cb=lambda: os._exit(0),
         )
         if get_pref("monitor_enabled", False):
