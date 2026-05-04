@@ -10,7 +10,7 @@ from tkinter import ttk
 from core.version import APP_VERSION
 from core.prefs import get_pref
 from core.monitor import BackgroundMonitor
-from core.notifier import notify
+from core.notifier import notify, setup_notification_handler
 from .update_dialog import check_for_updates
 from .settings_dialog import SettingsDialog
 from .tray import TrayIcon
@@ -43,6 +43,7 @@ class AnalyzerApp:
         self._build_ui()
         self._setup_monitor()
         self._setup_tray()
+        setup_notification_handler(lambda: self.root.after(50, self._show_window))
 
         # Fenster bei Autostart-Modus sofort verstecken
         if start_hidden:
@@ -88,6 +89,7 @@ class AnalyzerApp:
 
         self.root.bind("<Command-comma>", lambda _: self._open_settings())
         self.root.bind("<Control-comma>", lambda _: self._open_settings())
+        self.root.bind("<Command-w>", lambda _: self._on_close())
 
     # ── UI ────────────────────────────────────────────────────────────────
 

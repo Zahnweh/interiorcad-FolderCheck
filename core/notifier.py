@@ -7,6 +7,38 @@ macOS: osascript (keine Abhängigkeit). Windows: plyer.
 import platform
 import subprocess
 
+_delegate = None   # hält den NSUserNotificationCenter-Delegate am Leben
+
+
+def setup_notification_handler(on_show_cb) -> None:
+    """
+    Registriert einen Delegate für NSUserNotificationCenter.
+    on_show_cb wird aufgerufen wenn der User auf 'Anzeigen' klickt.
+    Muss vom Hauptthread aus aufgerufen werden.
+    """
+    if platform.system() != "Darwin":
+        return
+    global _delegate
+    try:
+        from Foundation import NSObject, NSUserNotificationCenter
+        import objc
+
+        class _Delegate(NSObject):
+            def userNotificationCenter_didActivateNotification_(
+                    self, center, notification):
+                if on_show_cb:
+                    on_show_cb()
+
+            def userNotificationCenter_shouldPresentNotification_(
+                    self, center, notification):
+                return True
+
+        _delegate = _Delegate.alloc().init()
+        NSUserNotificationCenter.defaultUserNotificationCenter() \
+            .setDelegate_(_delegate)
+    except Exception:
+        pass
+
 
 def notify(title: str, message: str) -> None:
     """Zeigt eine System-Notification. Schlägt lautlos fehl."""
