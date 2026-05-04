@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.0.2 (2026-05-04)
+
+### Behoben
+- **Einstellungen-Dialog (Mac)**: Interval-Änderung erforderte zwei Speichern-Klicks. Ursache: Cmd+, feuerte sowohl `::tk::mac::ShowPreferences` als auch die Tkinter-Tastenbindung gleichzeitig, was zwei übereinanderliegende Dialog-Instanzen öffnete.
+- **Dock-Icon**: Wird jetzt ausgeblendet, wenn das Hauptfenster bei aktivem Hintergrund-Monitor per CMD+W oder Schließen-Button geschlossen wird, und beim nächsten Öffnen wieder eingeblendet.
+
+---
+
 ## 2.0.1 (2026-05-04)
 
 ### Behoben

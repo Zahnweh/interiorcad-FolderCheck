@@ -23,6 +23,22 @@ WIN_WIDTH  = 860
 WIN_HEIGHT = 1050
 
 
+def _set_dock_icon_visible(visible: bool) -> None:
+    """Zeigt oder versteckt das Dock-Icon auf macOS (lautlos ignoriert auf Windows)."""
+    if platform.system() != "Darwin":
+        return
+    try:
+        import AppKit
+        policy = (
+            AppKit.NSApplicationActivationPolicyRegular
+            if visible else
+            AppKit.NSApplicationActivationPolicyAccessory
+        )
+        AppKit.NSApplication.sharedApplication().setActivationPolicy_(policy)
+    except Exception:
+        pass
+
+
 class AnalyzerApp:
 
     def __init__(self, start_hidden: bool = False):
@@ -87,8 +103,10 @@ class AnalyzerApp:
                 "::tk::mac::ShowPreferences", self._open_settings
             )
 
-        self.root.bind("<Command-comma>", lambda _: self._open_settings())
-        self.root.bind("<Control-comma>", lambda _: self._open_settings())
+        # Auf macOS übernimmt ::tk::mac::ShowPreferences den Cmd+,-Shortcut;
+        # ein zusätzliches <Command-comma>-Binding würde den Dialog doppelt öffnen.
+        if platform.system() != "Darwin":
+            self.root.bind("<Control-comma>", lambda _: self._open_settings())
         self.root.bind("<Command-w>", lambda _: self._on_close())
 
     # ── UI ────────────────────────────────────────────────────────────────
@@ -168,7 +186,11 @@ class AnalyzerApp:
     # ── Einstellungen ─────────────────────────────────────────────────────
 
     def _open_settings(self) -> None:
-        SettingsDialog(
+        if hasattr(self, "_settings_dlg") and self._settings_dlg.winfo_exists():
+            self._settings_dlg.lift()
+            self._settings_dlg.focus_force()
+            return
+        self._settings_dlg = SettingsDialog(
             self.root,
             on_monitor_change=self._on_monitor_settings_change,
         )
@@ -182,11 +204,13 @@ class AnalyzerApp:
     def _on_close(self) -> None:
         if get_pref("monitor_enabled", False):
             self.root.withdraw()
+            _set_dock_icon_visible(False)
         else:
             self._tray.stop()
             self.root.destroy()
 
     def _show_window(self) -> None:
+        _set_dock_icon_visible(True)
         self.root.deiconify()
         self.root.lift()
         self.root.focus_force()

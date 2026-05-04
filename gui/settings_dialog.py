@@ -11,6 +11,8 @@ from core import autostart
 from gui import theme as T
 from gui.widgets import style_toplevel
 
+_INTERVAL_OPTIONS = [15, 30, 60]
+
 
 class SettingsDialog(tk.Toplevel):
 
@@ -19,7 +21,6 @@ class SettingsDialog(tk.Toplevel):
         self.title("Einstellungen")
         self.resizable(False, False)
         self.transient(parent)
-        self.grab_set()
         style_toplevel(self)
         self._on_monitor_change = on_monitor_change
 
@@ -30,6 +31,10 @@ class SettingsDialog(tk.Toplevel):
 
         self._build()
         self._load()
+
+        self.wait_visibility()
+        self.lift()
+        self.focus_force()
 
     # ── UI ────────────────────────────────────────────────────────────────
 
@@ -54,17 +59,13 @@ class SettingsDialog(tk.Toplevel):
         interval_frame.pack(anchor="w", padx=(T.PAD_L * 2, 0), pady=(T.PAD_XS, 0))
         ttk.Label(interval_frame, text="Intervall:").pack(side="left", padx=(0, T.PAD_M))
 
-        self._interval_var = tk.IntVar(value=30)
-        self._interval_btns = []
-        for minutes in (15, 30, 60):
-            rb = ttk.Radiobutton(
-                interval_frame,
-                text=f"{minutes} Min.",
-                variable=self._interval_var,
-                value=minutes,
-            )
-            rb.pack(side="left", padx=(0, T.PAD_S))
-            self._interval_btns.append(rb)
+        self._interval_combo = ttk.Combobox(
+            interval_frame,
+            values=[f"{m} Min." for m in _INTERVAL_OPTIONS],
+            state="readonly",
+            width=9,
+        )
+        self._interval_combo.pack(side="left")
 
         # ── Autostart ─────────────────────────────────────────────────────
         ttk.Frame(outer, height=T.PAD_M).pack()
@@ -93,7 +94,11 @@ class SettingsDialog(tk.Toplevel):
 
     def _load(self) -> None:
         self._monitor_var.set(get_pref("monitor_enabled", False))
-        self._interval_var.set(get_pref("monitor_interval", 30))
+        saved = get_pref("monitor_interval", 30)
+        if saved in _INTERVAL_OPTIONS:
+            self._interval_combo.current(_INTERVAL_OPTIONS.index(saved))
+        else:
+            self._interval_combo.current(1)  # default 30 Min.
         self._autostart_var.set(autostart.is_enabled())
         self._update_interval_state()
 
@@ -103,16 +108,15 @@ class SettingsDialog(tk.Toplevel):
             self._autostart_var.set(False)
 
     def _update_interval_state(self) -> None:
-        state = "normal" if self._monitor_var.get() else "disabled"
-        for rb in self._interval_btns:
-            rb.config(state=state)
+        combo_state = "readonly" if self._monitor_var.get() else "disabled"
+        self._interval_combo.config(state=combo_state)
         self._autostart_cb.config(
             state="normal" if self._monitor_var.get() else "disabled"
         )
 
     def _save(self) -> None:
         monitor_enabled = self._monitor_var.get()
-        interval        = self._interval_var.get()
+        interval        = _INTERVAL_OPTIONS[self._interval_combo.current()]
         autostart_on    = self._autostart_var.get() and monitor_enabled
 
         set_pref("monitor_enabled", monitor_enabled)
@@ -127,7 +131,7 @@ class SettingsDialog(tk.Toplevel):
                 parent=self,
             )
 
-        if self._on_monitor_change:
-            self._on_monitor_change(monitor_enabled, interval)
-
+        on_change = self._on_monitor_change
         self.destroy()
+        if on_change:
+            self.master.after(50, lambda: on_change(monitor_enabled, interval))
