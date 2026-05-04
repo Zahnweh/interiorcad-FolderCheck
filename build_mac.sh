@@ -59,7 +59,8 @@ pyinstaller \
     --hidden-import pystray \
     --hidden-import PIL \
     --add-data "$DIR/icon.png:." \
-    --add-data "$DIR/icon_tray.png:." \
+    --add-data "$DIR/icon_tray_bk.png:." \
+    --add-data "$DIR/icon_tray_wh.png:." \
     --clean \
     --noconfirm \
     main.py

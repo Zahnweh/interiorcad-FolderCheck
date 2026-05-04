@@ -18,29 +18,39 @@ except ImportError:
     _PYSTRAY_AVAILABLE = False
 
 
+def _is_dark_mode() -> bool:
+    try:
+        import subprocess
+        result = subprocess.run(
+            ["defaults", "read", "-g", "AppleInterfaceStyle"],
+            capture_output=True, text=True
+        )
+        return result.returncode == 0 and "dark" in result.stdout.lower()
+    except Exception:
+        return False
+
+
 def _load_icon_image() -> "PILImage.Image | None":
     if not _PYSTRAY_AVAILABLE:
         return None
-    base = Path(getattr(sys, "_MEIPASS", "")) or Path(__file__).parent.parent
+    root = Path(__file__).parent.parent
+    meipass = Path(getattr(sys, "_MEIPASS", ""))
+
+    dark = _is_dark_mode()
+    preferred = "icon_tray_wh.png" if dark else "icon_tray_bk.png"
+    fallback  = "icon_tray_bk.png" if dark else "icon_tray_wh.png"
+
     candidates = [
-        Path(__file__).parent.parent / "icon_tray.png",
-        Path(__file__).parent.parent / "icon.png",
-        base / "icon_tray.png",
-        base / "icon.png",
+        root / preferred, meipass / preferred,
+        root / fallback,  meipass / fallback,
+        root / "icon.png", meipass / "icon.png",
     ]
     for p in candidates:
         if p.exists():
             img = PILImage.open(p).convert("RGBA")
             img = img.resize((22, 22), PILImage.LANCZOS)
-            # Alpha-Kanal erhalten, alle Pixel auf Weiß setzen →
-            # macOS Template-Mechanismus (automatisch schwarz im Light Mode)
-            r, g, b, a = img.split()
-            white = PILImage.new("L", img.size, 255)
-            img = PILImage.merge("RGBA", (white, white, white, a))
             return img
-    # Einfaches Fallback-Icon (16×16 blau)
-    img = PILImage.new("RGBA", (16, 16), (0, 120, 212, 255))
-    return img
+    return PILImage.new("RGBA", (16, 16), (0, 120, 212, 255))
 
 
 class TrayIcon:
@@ -94,19 +104,6 @@ class TrayIcon:
         )
 
         if platform.system() == "Darwin":
-            # Patch _assert_image so that after every setImage_-Aufruf durch
-            # pystray das Template-Flag gesetzt wird. Nur so bleibt es erhalten.
-            _orig_assert = self._icon._assert_image
-            def _patched_assert():
-                _orig_assert()
-                try:
-                    nsimg = self._icon._status_item.button().image()
-                    if nsimg is not None:
-                        nsimg.setTemplate_(True)
-                except Exception:
-                    pass
-            self._icon._assert_image = _patched_assert
-
             def _setup(icon):
                 icon.visible = True
             self._icon.run_detached(setup=_setup)
