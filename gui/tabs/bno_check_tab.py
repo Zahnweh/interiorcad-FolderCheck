@@ -391,6 +391,9 @@ class BNOCheckTab(ttk.Frame):
             if folders.unexpected_dirs:
                 parts.append(f"{len(folders.unexpected_dirs)} unerwartete Ordner")
             self.status_bar.set("BNO-Probleme: " + ", ".join(parts), "warning")
+            if notify_ok:
+                notify("interiorcad FolderCheck",
+                       f"BNO: {issues} Problem{'e' if issues != 1 else ''} gefunden")
 
     def _ins(self, t, text, tag=None):
         t.insert("end", text, tag or "")

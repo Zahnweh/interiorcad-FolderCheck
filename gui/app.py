@@ -140,11 +140,12 @@ class AnalyzerApp:
             self._monitor.start()
 
     def _on_monitor_result(self, tab: str, count: int, results) -> None:
-        label = "AGO" if tab == "ago" else "BNO"
-        notify(
-            title=APP_NAME,
-            message=f"{count} Problem{'e' if count != 1 else ''} erkannt im {label}",
-        )
+        if count > 0:
+            label = "AGO" if tab == "ago" else "BNO"
+            notify(
+                title=APP_NAME,
+                message=f"{count} Problem{'e' if count != 1 else ''} erkannt im {label}",
+            )
         # Ergebnisse im UI-Thread anzeigen sobald Fenster sichtbar ist
         self.root.after(0, lambda: self._apply_background_results(tab, results))
 

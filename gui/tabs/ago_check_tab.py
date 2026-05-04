@@ -342,6 +342,9 @@ class AGOCheckTab(ttk.Frame):
             if dupes.total_conflicts:
                 parts.append(f"{dupes.total_conflicts} Duplikat(e)")
             self.status_bar.set("Probleme: " + ", ".join(parts), "warning")
+            if notify_ok:
+                notify("interiorcad FolderCheck",
+                       f"AGO: {issues} Problem{'e' if issues != 1 else ''} gefunden")
 
     def _ins(self, t, text, tag=None):
         t.insert("end", text, tag or "")

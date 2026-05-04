@@ -54,7 +54,10 @@ class BackgroundMonitor:
 
     def run_once(self) -> None:
         """Einmalige Prüfung sofort (nicht-blockierend)."""
-        threading.Thread(target=lambda: self._check(notify_ok=True), daemon=True).start()
+        threading.Thread(
+            target=lambda: self._check(notify_ok=True, always_callback=True),
+            daemon=True,
+        ).start()
 
     # ── Internes ──────────────────────────────────────────────────────────
 
@@ -65,7 +68,7 @@ class BackgroundMonitor:
             if self._stop.wait(interval_sec):
                 break
 
-    def _check(self, notify_ok: bool = False) -> None:
+    def _check(self, notify_ok: bool = False, always_callback: bool = False) -> None:
         ago_path = get_pref("last_ago_path")
         bno_path = get_pref("last_bno_path")
 
@@ -86,7 +89,7 @@ class BackgroundMonitor:
                 self.last_ago_results = results
                 self.last_ago_count   = count
                 ago_checked = True
-                if count > 0:
+                if count > 0 or always_callback:
                     for cb in self._callbacks:
                         cb("ago", count, results)
             except Exception:
@@ -105,7 +108,7 @@ class BackgroundMonitor:
                 self.last_bno_results = results
                 self.last_bno_count   = count
                 bno_checked = True
-                if count > 0:
+                if count > 0 or always_callback:
                     for cb in self._callbacks:
                         cb("bno", count, results)
             except Exception:
