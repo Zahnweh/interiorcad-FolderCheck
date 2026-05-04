@@ -90,8 +90,19 @@ class TrayIcon:
 
         if platform.system() == "Darwin":
             # run_detached() integriert sich in den laufenden NSApp-Runloop
-            # (Tkinter nutzt denselben) – darf nicht in einem Thread aufgerufen werden
-            self._icon.run_detached()
+            # (Tkinter nutzt denselben) – darf nicht in einem Thread aufgerufen werden.
+            # setup-Callback: Icon sichtbar machen und als Template markieren →
+            # macOS invertiert es dann automatisch je nach Erscheinungsbild.
+            def _setup(icon):
+                icon.visible = True
+                try:
+                    btn = icon._status_item.button()
+                    nsimg = btn.image()
+                    if nsimg is not None:
+                        nsimg.setTemplate_(True)
+                except Exception:
+                    pass
+            self._icon.run_detached(setup=_setup)
         else:
             # Windows: run() in eigenem Thread
             self._thread = threading.Thread(
