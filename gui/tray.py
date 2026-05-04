@@ -21,9 +21,12 @@ except ImportError:
 def _load_icon_image() -> "PILImage.Image | None":
     if not _PYSTRAY_AVAILABLE:
         return None
+    base = Path(getattr(sys, "_MEIPASS", "")) or Path(__file__).parent.parent
     candidates = [
+        Path(__file__).parent.parent / "icon_tray.png",
         Path(__file__).parent.parent / "icon.png",
-        Path(getattr(sys, "_MEIPASS", "")) / "icon.png",
+        base / "icon_tray.png",
+        base / "icon.png",
     ]
     for p in candidates:
         if p.exists():
