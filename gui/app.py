@@ -12,6 +12,7 @@ from core.monitor import BackgroundMonitor
 from core.notifier import notify
 from .update_dialog import check_for_updates
 from .settings_dialog import SettingsDialog
+from .tray import TrayIcon
 from .widgets import apply_platform_style, StatusBar
 from .tabs.ago_check_tab import AGOCheckTab
 from .tabs.bno_check_tab import BNOCheckTab
@@ -40,6 +41,7 @@ class AnalyzerApp:
         self._build_menu()
         self._build_ui()
         self._setup_monitor()
+        self._setup_tray()
 
         # Fenster bei Autostart-Modus sofort verstecken
         if start_hidden:
@@ -112,6 +114,18 @@ class AnalyzerApp:
         self.root.after(200, self._refresh_all)
         self.root.after(3000, lambda: check_for_updates(self.root, silent=True))
 
+    # ── Tray-Icon ─────────────────────────────────────────────────────────
+
+    def _setup_tray(self) -> None:
+        # Alle Callbacks müssen im Tk-Hauptthread laufen
+        self._tray = TrayIcon(
+            show_window_cb=lambda: self.root.after(0, self._show_window),
+            run_once_cb=lambda: self.root.after(0, self._monitor.run_once),
+            quit_cb=lambda: self.root.after(0, self.root.destroy),
+        )
+        if get_pref("monitor_enabled", False):
+            self._tray.start()
+
     # ── Hintergrund-Monitor ───────────────────────────────────────────────
 
     def _setup_monitor(self):
@@ -140,8 +154,10 @@ class AnalyzerApp:
     def _on_monitor_settings_change(self, enabled: bool, interval: int) -> None:
         if enabled:
             self._monitor.restart()
+            self._tray.start()
         else:
             self._monitor.stop()
+            self._tray.stop()
 
     # ── Einstellungen ─────────────────────────────────────────────────────
 
@@ -157,6 +173,7 @@ class AnalyzerApp:
         if get_pref("monitor_enabled", False):
             self.root.withdraw()
         else:
+            self._tray.stop()
             self.root.destroy()
 
     def _show_window(self) -> None:

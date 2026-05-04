@@ -10,7 +10,7 @@ OUTPUT_DIR="/Users/marcelostendorf/Documents/Eigene Apps/interiorcad FolderCheck
 
 # 1. Abhängigkeiten
 echo "Prüfe Abhängigkeiten..."
-pip3 install pyinstaller pillow certifi plyer --quiet --break-system-packages 2>/dev/null || true
+pip3 install pyinstaller pillow certifi plyer pystray --quiet --break-system-packages 2>/dev/null || true
 
 # 2. Icon erstellen
 if [ ! -f "icon.icns" ]; then
@@ -50,11 +50,14 @@ pyinstaller \
     --osx-bundle-identifier "de.extragroup.ago-analyzer" \
     --collect-all tkinter \
     --collect-all certifi \
+    --collect-all pystray \
     --hidden-import tkinter \
     --hidden-import tkinter.ttk \
     --hidden-import tkinter.filedialog \
     --hidden-import tkinter.messagebox \
     --hidden-import certifi \
+    --hidden-import pystray \
+    --hidden-import PIL \
     --add-data "$DIR/icon.png:." \
     --clean \
     --noconfirm \
