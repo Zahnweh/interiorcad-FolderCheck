@@ -54,9 +54,10 @@ class TrayIcon:
     quit_cb         : beendet die App vollständig
     """
 
-    def __init__(self, show_window_cb, run_once_cb, quit_cb, after_fn=None):
+    def __init__(self, show_window_cb, run_once_cb, settings_cb, quit_cb, after_fn=None):
         self._show_window = show_window_cb
         self._run_once    = run_once_cb
+        self._settings    = settings_cb
         self._quit        = quit_cb
         self._after_fn    = after_fn   # root.after – für Hauptthread-Dispatch
         self._icon: "pystray.Icon | None" = None
@@ -74,20 +75,12 @@ class TrayIcon:
             return
 
         menu = pystray.Menu(
-            pystray.MenuItem(
-                "Fenster anzeigen",
-                self._on_show,
-                default=True,
-            ),
-            pystray.MenuItem(
-                "Jetzt prüfen",
-                self._on_run_once,
-            ),
+            pystray.MenuItem("Fenster anzeigen", self._on_show, default=True),
+            pystray.MenuItem("Jetzt prüfen",     self._on_run_once),
             pystray.Menu.SEPARATOR,
-            pystray.MenuItem(
-                "Beenden",
-                self._on_quit,
-            ),
+            pystray.MenuItem("Einstellungen …",  self._on_settings),
+            pystray.Menu.SEPARATOR,
+            pystray.MenuItem("Beenden",          self._on_quit),
         )
 
         self._icon = pystray.Icon(
@@ -165,6 +158,9 @@ class TrayIcon:
 
     def _on_run_once(self, icon, item) -> None:
         self._run_once()
+
+    def _on_settings(self, icon, item) -> None:
+        self._settings()
 
     def _on_quit(self, icon, item) -> None:
         # stop() nicht aufrufen – auf macOS würde pystray dabei NSApp stoppen,

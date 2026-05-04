@@ -20,18 +20,25 @@ def notify(title: str, message: str) -> None:
 
 
 def _notify_mac(title: str, message: str) -> None:
-    safe_msg   = message.replace('"', '\\"')
-    safe_title = title.replace('"', '\\"')
-    script = (
-        f'display notification "{safe_msg}" '
-        f'with title "{safe_title}" '
-        f'sound name "default"'
-    )
-    subprocess.Popen(
-        ["osascript", "-e", script],
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
-    )
+    # NSUserNotificationCenter schickt die Notification vom laufenden Prozess –
+    # Klick auf "Anzeigen" öffnet unsere App, nicht den Script Editor.
+    try:
+        from Foundation import NSUserNotification, NSUserNotificationCenter
+        notif = NSUserNotification.alloc().init()
+        notif.setTitle_(title)
+        notif.setInformativeText_(message)
+        NSUserNotificationCenter.defaultUserNotificationCenter() \
+            .deliverNotification_(notif)
+    except Exception:
+        # Fallback für den Fall dass PyObjC nicht verfügbar ist
+        safe_msg   = message.replace('"', '\\"')
+        safe_title = title.replace('"', '\\"')
+        subprocess.Popen(
+            ["osascript", "-e",
+             f'display notification "{safe_msg}" with title "{safe_title}"'],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
 
 
 def _notify_windows(title: str, message: str) -> None:

@@ -122,6 +122,7 @@ class AnalyzerApp:
         self._tray = TrayIcon(
             show_window_cb=lambda: self.root.after(50, self._show_window),
             run_once_cb=lambda: self.root.after(50, self._monitor.run_once),
+            settings_cb=lambda: self.root.after(50, self._show_and_open_settings),
             quit_cb=lambda: os._exit(0),
             after_fn=self.root.after,
         )
@@ -168,6 +169,10 @@ class AnalyzerApp:
             self.root,
             on_monitor_change=self._on_monitor_settings_change,
         )
+
+    def _show_and_open_settings(self) -> None:
+        self._show_window()
+        self._open_settings()
 
     # ── Fenster-Lebenszyklus ──────────────────────────────────────────────
 
