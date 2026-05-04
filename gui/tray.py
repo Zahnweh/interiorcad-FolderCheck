@@ -32,6 +32,11 @@ def _load_icon_image() -> "PILImage.Image | None":
         if p.exists():
             img = PILImage.open(p).convert("RGBA")
             img = img.resize((22, 22), PILImage.LANCZOS)
+            # Alpha-Kanal erhalten, alle Pixel auf Weiß setzen →
+            # macOS Template-Mechanismus (automatisch schwarz im Light Mode)
+            r, g, b, a = img.split()
+            white = PILImage.new("L", img.size, 255)
+            img = PILImage.merge("RGBA", (white, white, white, a))
             return img
     # Einfaches Fallback-Icon (16×16 blau)
     img = PILImage.new("RGBA", (16, 16), (0, 120, 212, 255))
