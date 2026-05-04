@@ -91,7 +91,9 @@ class TrayIcon:
 
             def _apply_template():
                 """Läuft auf dem Hauptthread (via root.after)."""
-                import AppKit, traceback
+                import AppKit
+                from Foundation import NSData, NSMakeSize
+                from io import BytesIO
                 root_dir = Path(__file__).parent.parent
                 meipass  = Path(getattr(sys, "_MEIPASS", ""))
                 try:
@@ -101,17 +103,25 @@ class TrayIcon:
                         root_dir / "icon.png",
                         meipass  / "icon.png",
                     ]:
-                        if p.exists():
-                            ns_img = AppKit.NSImage.alloc().initWithContentsOfFile_(str(p))
-                            if ns_img and ns_img.size().width > 0:
-                                from Foundation import NSMakeSize
-                                ns_img.setSize_(NSMakeSize(18, 18))
-                                ns_img.setTemplate_(True)
-                                _icon_ref._status_item.button().setImage_(ns_img)
-                                _icon_ref._assert_image = lambda: None
-                            break
+                        if not p.exists():
+                            continue
+                        # PIL für korrektes Alpha-Handling laden,
+                        # dann 36×36px (= 18pt @2x Retina) als NSImage
+                        pil = PILImage.open(p).convert("RGBA")
+                        pil = pil.resize((36, 36), PILImage.LANCZOS)
+                        buf = BytesIO()
+                        pil.save(buf, format="PNG")
+                        raw = buf.getvalue()
+                        ns_data = NSData.dataWithBytes_length_(raw, len(raw))
+                        ns_img  = AppKit.NSImage.alloc().initWithData_(ns_data)
+                        if ns_img and ns_img.size().width > 0:
+                            ns_img.setSize_(NSMakeSize(18, 18))
+                            ns_img.setTemplate_(True)
+                            _icon_ref._status_item.button().setImage_(ns_img)
+                            _icon_ref._assert_image = lambda: None
+                        break
                 except Exception:
-                    traceback.print_exc()
+                    import traceback; traceback.print_exc()
 
             def _setup(icon):
                 icon.visible = True
