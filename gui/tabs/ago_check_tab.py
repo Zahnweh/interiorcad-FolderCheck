@@ -16,6 +16,7 @@ from gui.whitelist_dialog import AddToWhitelistDialog, WhitelistManagerDialog
 from core.detector import detect_all_installations
 from core.prefs import get_pref, set_pref
 from core.report import save_report
+from core.notifier import notify
 from core.ago_checker import (
     check_ago_structure, check_duplicates, check_filenames, check_unexpected_folders,
     StructureResult, DuplicateResult, FilenameResult, FolderCheckResult,
@@ -300,7 +301,7 @@ class AGOCheckTab(ttk.Frame):
         names   = check_filenames(bno, ago)
         folders = check_unexpected_folders(ago)
         dupes   = check_duplicates(bno, ago)
-        self.after(0, self._show_results, struct, names, folders, dupes)
+        self.after(0, lambda: self._show_results(struct, names, folders, dupes, notify_ok=True))
 
     # ── Anzeige ───────────────────────────────────────────────────────────
 
@@ -313,7 +314,7 @@ class AGOCheckTab(ttk.Frame):
                 tw.insert("end", "Noch keine Prüfung durchgeführt.", "muted")
                 tw.config(state="disabled")
 
-    def _show_results(self, struct, names, folders, dupes):
+    def _show_results(self, struct, names, folders, dupes, notify_ok: bool = False):
         self._last_results = (struct, names, folders, dupes)
         self._export_btn.config(state="normal")
         self._show_structure(struct)
@@ -326,6 +327,8 @@ class AGOCheckTab(ttk.Frame):
                   dupes.total_conflicts)
         if issues == 0:
             self.status_bar.set("Alles in Ordnung – keine Probleme gefunden", "ok")
+            if notify_ok:
+                notify("interiorcad FolderCheck", "AGO: Alles in Ordnung – keine Probleme gefunden")
         else:
             parts = []
             if struct.missing_dirs:

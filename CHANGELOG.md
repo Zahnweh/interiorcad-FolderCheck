@@ -1,5 +1,21 @@
 # Changelog
 
+## 2.0.0 (2026-05-04)
+
+### Neu
+- **Hintergrund-Monitor** – Die App prüft AGO und BNO automatisch in einstellbaren Intervallen (15 / 30 / 60 Min.), auch wenn das Fenster geschlossen ist.
+- **Menüleisten-Icon** (macOS) / **System-Tray-Icon** (Windows) – Solange der Monitor aktiv ist, läuft die App im Hintergrund und ist über das Icon erreichbar. Menü: Fenster anzeigen, Jetzt prüfen, Einstellungen, Beenden.
+- **Benachrichtigungen** – Bei gefundenen Problemen erscheint eine System-Notification. Nach einer manuellen Prüfung (Hauptfenster oder Tray „Jetzt prüfen") wird auch „Alles in Ordnung" gemeldet. Klick auf die Notification öffnet das App-Fenster.
+- **CMD+W** schließt das Hauptfenster (macOS).
+
+### Verbessert
+- **Windows – Duplikat-Check**: Dateinamen werden jetzt groß-/kleinschreibungsunabhängig verglichen.
+- **Windows – Duplikat-Check**: Der Ordner `Einstellungen`/`Settings` wird jetzt sprachübergreifend geprüft (z. B. Windows-BNO `Settings` gegen Mac-AGO `Einstellungen`).
+- **Windows – Benachrichtigungen**: Das plyer-Backend ist jetzt korrekt im Build enthalten.
+- **Windows – Dark Mode**: Radiobuttons und Checkboxen behalten beim Hover die korrekte Hintergrundfarbe.
+
+---
+
 ## 1.2.2 (2026-05-02)
 
 ### Behoben

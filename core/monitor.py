@@ -6,6 +6,7 @@ und ruft Callbacks auf wenn Probleme gefunden werden.
 
 import threading
 from core.prefs import get_pref
+from core.notifier import notify
 from core.ago_checker import (
     check_ago_structure, check_filenames,
     check_unexpected_folders, check_duplicates,
@@ -53,7 +54,7 @@ class BackgroundMonitor:
 
     def run_once(self) -> None:
         """Einmalige Prüfung sofort (nicht-blockierend)."""
-        threading.Thread(target=self._check, daemon=True).start()
+        threading.Thread(target=lambda: self._check(notify_ok=True), daemon=True).start()
 
     # ── Internes ──────────────────────────────────────────────────────────
 
@@ -64,9 +65,12 @@ class BackgroundMonitor:
             if self._stop.wait(interval_sec):
                 break
 
-    def _check(self) -> None:
+    def _check(self, notify_ok: bool = False) -> None:
         ago_path = get_pref("last_ago_path")
         bno_path = get_pref("last_bno_path")
+
+        ago_checked = False
+        bno_checked = False
 
         # ── AGO ──────────────────────────────────────────────────────────
         if ago_path and bno_path:
@@ -81,6 +85,7 @@ class BackgroundMonitor:
                            dupes.total_conflicts)
                 self.last_ago_results = results
                 self.last_ago_count   = count
+                ago_checked = True
                 if count > 0:
                     for cb in self._callbacks:
                         cb("ago", count, results)
@@ -99,8 +104,15 @@ class BackgroundMonitor:
                            len(folders.unexpected_dirs))
                 self.last_bno_results = results
                 self.last_bno_count   = count
+                bno_checked = True
                 if count > 0:
                     for cb in self._callbacks:
                         cb("bno", count, results)
             except Exception:
                 pass
+
+        if notify_ok and (ago_checked or bno_checked):
+            total = self.last_ago_count + self.last_bno_count
+            if total == 0:
+                notify("interiorcad FolderCheck",
+                       "Alles in Ordnung – keine Probleme gefunden")

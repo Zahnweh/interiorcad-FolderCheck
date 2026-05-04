@@ -916,10 +916,10 @@ DUPLICATE_SCAN_AREAS = [
      os.path.join("Bibliotheken", "Vorgaben", "Export"), False),
     (os.path.join("Bibliotheken", "Vorgaben", "Vorgabedokumente"),
      os.path.join("Bibliotheken", "Vorgaben", "Vorgabedokumente"), False),
-    # Einstellungen / Settings (sprachabhängig) – Dateien und Ordner aller Art
-    ("Einstellungen", "Einstellungen", True),
-    ("Settings",      "Settings",      True),
 ]
+
+# Mögliche Ordnernamen für Einstellungen – sprachabhängig (DE/EN)
+_SETTINGS_NAMES = ("Einstellungen", "Settings")
 
 
 def check_duplicates(bno_path: str, ago_path: str) -> DuplicateResult:
@@ -935,6 +935,27 @@ def check_duplicates(bno_path: str, ago_path: str) -> DuplicateResult:
             result.duplicate_files.extend(dupes)
         except Exception as e:
             result.scan_errors.append(f"{bno_rel}: {e}")
+
+    # Einstellungen/Settings: alle Sprachkombinationen prüfen (z. B. Windows-BNO
+    # "Settings" gegen Mac-AGO "Einstellungen"). realpath-Dedup verhindert doppeltes Zählen.
+    _seen_pairs: set = set()
+    for bno_name in _SETTINGS_NAMES:
+        bno_dir = os.path.join(bno_path, bno_name)
+        if not os.path.isdir(bno_dir):
+            continue
+        for ago_name in _SETTINGS_NAMES:
+            ago_dir = os.path.join(ago_path, ago_name)
+            if not os.path.isdir(ago_dir):
+                continue
+            pair = (os.path.realpath(bno_dir), os.path.realpath(ago_dir))
+            if pair in _seen_pairs:
+                continue
+            _seen_pairs.add(pair)
+            try:
+                dupes = _find_duplicates_in_area(bno_dir, ago_dir, "", True)
+                result.duplicate_files.extend(dupes)
+            except Exception as e:
+                result.scan_errors.append(f"{bno_name}: {e}")
 
     bno_exp = os.path.join(bno_path, EXPORTSTARTER_BNO_REL)
     ago_exp = os.path.join(ago_path, EXPORTSTARTER_AGO_ROOT)
@@ -961,15 +982,26 @@ def _find_duplicates_in_area(bno_dir, ago_dir, relative_dir, recursive, _seen=No
     except PermissionError:
         return duplicates
 
-    for name in sorted(set(bno_entries) & set(ago_entries)):
-        b, a = bno_entries[name], ago_entries[name]
+    # Windows: Dateinamen sind case-insensitiv → Vergleich ohne Groß-/Kleinschreibung
+    if platform.system() == "Windows":
+        ago_lower = {n.lower(): n for n in ago_entries}
+        pairs = sorted(
+            ((bno_n, ago_lower[bno_n.lower()])
+             for bno_n in bno_entries if bno_n.lower() in ago_lower),
+            key=lambda t: t[0].lower(),
+        )
+    else:
+        pairs = [(n, n) for n in sorted(set(bno_entries) & set(ago_entries))]
+
+    for bno_name, ago_name in pairs:
+        b, a = bno_entries[bno_name], ago_entries[ago_name]
         if b.is_dir() and a.is_dir() and recursive:
-            sub_rel = f"{relative_dir}/{name}" if relative_dir else name
+            sub_rel = f"{relative_dir}/{bno_name}" if relative_dir else bno_name
             duplicates.extend(_find_duplicates_in_area(
                 b.path, a.path, sub_rel, True, _seen))
         elif b.is_file() and a.is_file():
             duplicates.append(DuplicateFile(
-                filename=name, relative_dir=relative_dir,
+                filename=bno_name, relative_dir=relative_dir,
                 bno_full_path=b.path, ago_full_path=a.path,
             ))
     return duplicates
