@@ -18,38 +18,22 @@ except ImportError:
     _PYSTRAY_AVAILABLE = False
 
 
-def _is_dark_mode() -> bool:
-    try:
-        import subprocess
-        result = subprocess.run(
-            ["defaults", "read", "-g", "AppleInterfaceStyle"],
-            capture_output=True, text=True
-        )
-        return result.returncode == 0 and "dark" in result.stdout.lower()
-    except Exception:
-        return False
-
-
 def _load_icon_image() -> "PILImage.Image | None":
     if not _PYSTRAY_AVAILABLE:
         return None
-    root = Path(__file__).parent.parent
+    root    = Path(__file__).parent.parent
     meipass = Path(getattr(sys, "_MEIPASS", ""))
-
-    dark = _is_dark_mode()
-    preferred = "icon_tray_wh.png" if dark else "icon_tray_bk.png"
-    fallback  = "icon_tray_bk.png" if dark else "icon_tray_wh.png"
-
     candidates = [
-        root / preferred, meipass / preferred,
-        root / fallback,  meipass / fallback,
-        root / "icon.png", meipass / "icon.png",
+        root    / "icon_tray_Template.png",
+        meipass / "icon_tray_Template.png",
+        root    / "icon_tray_bk.png",
+        meipass / "icon_tray_bk.png",
+        root    / "icon.png",
+        meipass / "icon.png",
     ]
     for p in candidates:
         if p.exists():
-            img = PILImage.open(p).convert("RGBA")
-            img = img.resize((22, 22), PILImage.LANCZOS)
-            return img
+            return PILImage.open(p).convert("RGBA")
     return PILImage.new("RGBA", (16, 16), (0, 120, 212, 255))
 
 
@@ -104,6 +88,20 @@ class TrayIcon:
         )
 
         if platform.system() == "Darwin":
+            # _assert_image patchen: nach jedem NSImage-Neuaufbau Template-Flag setzen.
+            # Direkt auf _icon_image (pystray-intern) – zuverlässiger als btn.image().
+            _orig = self._icon._assert_image
+            _ref  = self._icon
+            def _patched():
+                _orig()
+                try:
+                    if _ref._icon_image is not None:
+                        _ref._icon_image.setTemplate_(True)
+                        _ref._status_item.button().setImage_(_ref._icon_image)
+                except Exception:
+                    pass
+            self._icon._assert_image = _patched
+
             def _setup(icon):
                 icon.visible = True
             self._icon.run_detached(setup=_setup)

@@ -61,6 +61,7 @@ pyinstaller \
     --add-data "$DIR/icon.png:." \
     --add-data "$DIR/icon_tray_bk.png:." \
     --add-data "$DIR/icon_tray_wh.png:." \
+    --add-data "$DIR/icon_tray_Template.png:." \
     --clean \
     --noconfirm \
     main.py
