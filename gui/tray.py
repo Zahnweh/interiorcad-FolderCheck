@@ -19,22 +19,20 @@ except ImportError:
 
 
 def _load_icon_image() -> "PILImage.Image | None":
+    """Temporärer PIL-Platzhalter für pystray – wird via AppKit ersetzt."""
     if not _PYSTRAY_AVAILABLE:
         return None
     root    = Path(__file__).parent.parent
     meipass = Path(getattr(sys, "_MEIPASS", ""))
-    candidates = [
-        root    / "icon_tray_Template.png",
-        meipass / "icon_tray_Template.png",
-        root    / "icon_tray_bk.png",
-        meipass / "icon_tray_bk.png",
-        root    / "icon.png",
-        meipass / "icon.png",
-    ]
-    for p in candidates:
+    # Immer schwarze Variante: auf dunklem Hintergrund unsichtbar,
+    # kein weißer Balken während AppKit das echte Template-Icon setzt.
+    for p in [root / "icon_tray_bk.png", meipass / "icon_tray_bk.png",
+              root / "icon.png",         meipass / "icon.png"]:
         if p.exists():
-            return PILImage.open(p).convert("RGBA")
-    return PILImage.new("RGBA", (16, 16), (0, 120, 212, 255))
+            img = PILImage.open(p).convert("RGBA")
+            img = img.resize((22, 22), PILImage.LANCZOS)
+            return img
+    return PILImage.new("RGBA", (22, 22), (0, 0, 0, 255))
 
 
 class TrayIcon:
@@ -93,10 +91,10 @@ class TrayIcon:
 
             def _apply_template():
                 """Läuft auf dem Hauptthread (via root.after)."""
+                import AppKit, traceback
+                root_dir = Path(__file__).parent.parent
+                meipass  = Path(getattr(sys, "_MEIPASS", ""))
                 try:
-                    import AppKit
-                    root_dir = Path(__file__).parent.parent
-                    meipass  = Path(getattr(sys, "_MEIPASS", ""))
                     for p in [
                         root_dir / "icon_tray_bk.png",
                         meipass  / "icon_tray_bk.png",
@@ -105,13 +103,17 @@ class TrayIcon:
                     ]:
                         if p.exists():
                             ns_img = AppKit.NSImage.alloc().initWithContentsOfFile_(str(p))
-                            if ns_img:
+                            if ns_img and ns_img.size().width > 0:
                                 ns_img.setTemplate_(True)
                                 _icon_ref._status_item.button().setImage_(ns_img)
                                 _icon_ref._assert_image = lambda: None
+                            else:
+                                print(f"[tray] NSImage leer für {p}")
                             break
+                    else:
+                        print("[tray] Kein Icon-File gefunden")
                 except Exception:
-                    pass
+                    traceback.print_exc()
 
             def _setup(icon):
                 icon.visible = True
