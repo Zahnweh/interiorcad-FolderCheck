@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.0.3 (2026-05-08)
+
+### Behoben
+- **AGO Whitelist – interiorcad/Stammdaten**: Whitelist-Einträge (z. B. `*.bak`, `*.bak2`) wurden in diesem Ordner ignoriert, weil die Prüfroutine die Whitelist nie abfragte. Dateien wurden trotz gültigem Eintrag weiterhin als Fehler gemeldet.
+- **Windows-Updater**: `Copy-Item` wird jetzt bis zu 5-mal wiederholt, falls die Datei noch kurzzeitig gesperrt ist. Benennt den PowerShell-Parameter von `-pid` in `-oldPid` um, um einen Konflikt mit der PowerShell-Variable `$PID` zu vermeiden.
+
+---
+
 ## 2.0.2 (2026-05-04)
 
 ### Behoben

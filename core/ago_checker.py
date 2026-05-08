@@ -726,11 +726,12 @@ def check_filenames(bno_path: str, ago_path: str) -> FilenameResult:
         valid_norm = {_norm(v) for v in STAMMDATEN_VALID}
         for entry in _iter_files(ago_stammdaten, recursive=False):
             if _norm(entry.name) not in valid_norm:
-                result.invalid_files.append(InvalidFile(
-                    filename=entry.name, full_path=entry.path,
-                    location="AGO", area="interiorcad/Stammdaten",
-                    reason="Erlaubt: Boards.txt, Coverings.txt, Edges.txt, Finishings.txt",
-                ))
+                if not is_file_whitelisted(entry.path, ago_path):
+                    result.invalid_files.append(InvalidFile(
+                        filename=entry.name, full_path=entry.path,
+                        location="AGO", area="interiorcad/Stammdaten",
+                        reason="Erlaubt: Boards.txt, Coverings.txt, Edges.txt, Finishings.txt",
+                    ))
 
     # ── Paar-Check: .vwx ↔ .json in Bauteil/ ────────────────────────────
     for bauteil_root, location, root_path in [

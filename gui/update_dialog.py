@@ -28,16 +28,19 @@ def _launch_win_updater(new_exe: str) -> None:
     if current_exe:
         pid = os.getpid()
         ps = (
-            "param($src, $dst, $pid)\n"
-            # Warten bis der alte Prozess vollständig beendet ist
-            "try { $p = Get-Process -Id $pid -ErrorAction Stop\n"
+            "param($src, $dst, $oldPid)\n"
+            "try { $p = Get-Process -Id $oldPid -ErrorAction Stop\n"
             "      $p.WaitForExit(10000) | Out-Null } catch {}\n"
-            "Start-Sleep 1\n"
-            "try {\n"
-            "    Copy-Item -Force $src $dst\n"
-            "    Start-Process $dst\n"
-            "} catch {\n"
-            "    Start-Process $src\n"
+            "Start-Sleep 2\n"
+            "$retries = 5\n"
+            "while ($retries -gt 0) {\n"
+            "    try { Copy-Item -Force -LiteralPath $src -Destination $dst; break }\n"
+            "    catch { $retries--; Start-Sleep 1 }\n"
+            "}\n"
+            "if (Test-Path -LiteralPath $dst) {\n"
+            "    Start-Process -FilePath $dst\n"
+            "} else {\n"
+            "    Start-Process -FilePath $src\n"
             "}\n"
             "Remove-Item -LiteralPath $PSCommandPath -Force -ErrorAction SilentlyContinue\n"
         )
@@ -51,7 +54,7 @@ def _launch_win_updater(new_exe: str) -> None:
             [
                 "powershell", "-ExecutionPolicy", "Bypass",
                 "-WindowStyle", "Hidden", "-File", ps_path,
-                "-src", new_exe, "-dst", current_exe, "-pid", str(pid),
+                "-src", new_exe, "-dst", current_exe, "-oldPid", str(pid),
             ],
             creationflags=subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP,
         )
