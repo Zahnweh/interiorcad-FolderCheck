@@ -1,0 +1,58 @@
+name: Build Windows EXE
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release-Tag (z.B. v2.0.3)"
+        required: true
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Dependencies installieren
+        run: pip install pyinstaller pillow certifi plyer pystray
+
+      - name: Icon erstellen
+        run: python make_icon.py
+
+      - name: EXE bauen
+        run: >
+          python -m PyInstaller
+          --name "interiorcad FolderCheck"
+          --onefile
+          --windowed
+          --icon icon.ico
+          --add-data "icon.png;."
+          --add-data "icon_tray_Template.png;."
+          --collect-all pystray
+          --collect-all plyer
+          --hidden-import tkinter
+          --hidden-import tkinter.ttk
+          --hidden-import tkinter.filedialog
+          --hidden-import tkinter.messagebox
+          --hidden-import pystray
+          --hidden-import PIL
+          --hidden-import plyer.platforms.win.notification
+          --clean
+          --noconfirm
+          main.py
+
+      - name: EXE ins Release hochladen
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: >
+          gh release upload "${{ github.event.release.tag_name || github.event.inputs.tag }}"
+          "dist/interiorcad FolderCheck.exe"
+          --clobber
+          --repo ${{ github.repository }}
