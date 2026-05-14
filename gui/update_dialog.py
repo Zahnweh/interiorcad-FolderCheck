@@ -25,41 +25,56 @@ def _launch_win_updater(new_exe: str) -> None:
     # sys.frozen ist True wenn die App als PyInstaller-Bundle läuft
     current_exe = sys.executable if getattr(sys, "frozen", False) else None
 
-    if current_exe:
-        pid = os.getpid()
-        ps = (
-            "param($src, $dst, $oldPid)\n"
-            "try { $p = Get-Process -Id $oldPid -ErrorAction Stop\n"
-            "      $p.WaitForExit(10000) | Out-Null } catch {}\n"
-            "Start-Sleep 2\n"
-            "$retries = 5\n"
-            "while ($retries -gt 0) {\n"
-            "    try { Copy-Item -Force -LiteralPath $src -Destination $dst; break }\n"
-            "    catch { $retries--; Start-Sleep 1 }\n"
-            "}\n"
-            "if (Test-Path -LiteralPath $dst) {\n"
-            "    Start-Process -FilePath $dst\n"
-            "} else {\n"
-            "    Start-Process -FilePath $src\n"
-            "}\n"
-            "Remove-Item -LiteralPath $PSCommandPath -Force -ErrorAction SilentlyContinue\n"
-        )
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".ps1", delete=False, encoding="utf-8"
-        ) as f:
-            f.write(ps)
-            ps_path = f.name
-
-        subprocess.Popen(
-            [
-                "powershell", "-ExecutionPolicy", "Bypass",
-                "-WindowStyle", "Hidden", "-File", ps_path,
-                "-src", new_exe, "-dst", current_exe, "-oldPid", str(pid),
-            ],
-            creationflags=subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP,
-        )
-    else:
+    if not current_exe:
         os.startfile(new_exe)
+        return
+
+    pid = os.getpid()
+    # Einfache Anführungszeichen in Pfaden für PS-Strings escapen
+    src_esc = new_exe.replace("'", "''")
+    dst_esc = current_exe.replace("'", "''")
+
+    ps = (
+        "param($src, $dst, $oldPid)\n"
+        "try { $p = Get-Process -Id $oldPid -ErrorAction Stop\n"
+        "      $p.WaitForExit(15000) | Out-Null } catch {}\n"
+        "Start-Sleep 3\n"
+        "$copied = $false\n"
+        "for ($i = 0; $i -lt 6; $i++) {\n"
+        "    try { Copy-Item -Force -LiteralPath $src -Destination $dst\n"
+        "          $copied = $true; break }\n"
+        "    catch { Start-Sleep 3 }\n"
+        "}\n"
+        # Fallback: erneuter Versuch mit erhöhten Rechten (UAC-Dialog)
+        "if (-not $copied) {\n"
+        f"    $cmd = \"try {{ Copy-Item -Force -LiteralPath '{src_esc}' -Destination '{dst_esc}'; exit 0 }} catch {{ exit 1 }}\"\n"
+        "    try {\n"
+        "        $p2 = Start-Process powershell -Verb RunAs -Wait -PassThru -ArgumentList @('-ExecutionPolicy','Bypass','-Command',$cmd)\n"
+        "        if ($p2.ExitCode -eq 0) { $copied = $true }\n"
+        "    } catch {}\n"
+        "}\n"
+        # $copied statt Test-Path: Test-Path wäre auch bei der alten Datei True
+        "if ($copied) {\n"
+        "    Start-Process -FilePath $dst\n"
+        "} else {\n"
+        "    Start-Process -FilePath $src\n"
+        "}\n"
+        "Remove-Item -LiteralPath $PSCommandPath -Force -ErrorAction SilentlyContinue\n"
+    )
+    with tempfile.NamedTemporaryFile(
+        mode="w", suffix=".ps1", delete=False, encoding="utf-8"
+    ) as f:
+        f.write(ps)
+        ps_path = f.name
+
+    subprocess.Popen(
+        [
+            "powershell", "-ExecutionPolicy", "Bypass",
+            "-WindowStyle", "Hidden", "-File", ps_path,
+            "-src", new_exe, "-dst", current_exe, "-oldPid", str(pid),
+        ],
+        creationflags=subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP,
+    )
 
 
 # Guards gegen doppelte Ausführung
