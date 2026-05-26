@@ -65,11 +65,11 @@ def area_label(relative_dir: str) -> str:
 AGO_REQUIRED_DIRS = [
     "Bibliotheken",
     os.path.join("Bibliotheken", "Vorgaben"),
-    os.path.join("Bibliotheken", "Vorgaben", "Korpusmöbel"),
 ]
 
 # Werden von interiorcad bei Bedarf automatisch angelegt → kein Fehler wenn fehlend
 AGO_OPTIONAL_DIRS = [
+    os.path.join("Bibliotheken", "Vorgaben", "Korpusmöbel"),
     os.path.join("Bibliotheken", "Vorgaben", "Bauteil"),
     os.path.join("Bibliotheken", "Vorgaben", "Korpusmöbel 3D"),
     os.path.join("Bibliotheken", "Vorgaben", "Korpusmöbel 3D", "Saved Sets"),
