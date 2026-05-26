@@ -386,6 +386,7 @@ class InvalidFile:
     location: str
     area: str
     reason: str
+    severity: str = "error"   # "error" | "warning" | "info"
 
 @dataclass
 class FilenameResult:
@@ -423,6 +424,29 @@ _NO_JSON_REQUIRED = {
 }
 
 
+def _format_duration(seconds: float):
+    """Gibt (menschenlesbare Zeitdifferenz, Schweregrad) zurück.
+    Schweregrad: 'error' (≥1 Tag), 'warning' (<1 Tag / ≥1 Std.), 'info' (<1 Std.)"""
+    days  = int(seconds // 86400)
+    hours = int((seconds % 86400) // 3600)
+    mins  = int((seconds % 3600) // 60)
+    secs  = int(seconds % 60)
+    if days >= 1:
+        label = f"~{days} Tag{'e' if days != 1 else ''}"
+        if hours:
+            label += f", {hours} Std."
+        return label, "error"
+    elif hours >= 1:
+        label = f"~{hours} Std."
+        if mins:
+            label += f" {mins} min"
+        return label, "warning"
+    elif mins >= 1:
+        return f"{mins} min {secs} s", "info"
+    else:
+        return f"{secs} s", "info"
+
+
 def _collect_timestamp_issues(bno_path: str, ago_path: str) -> list:
     """Gibt InvalidFile-Einträge für .vwx/.json-Paare mit abweichendem Zeitstempel zurück."""
     issues = []
@@ -454,13 +478,13 @@ def _collect_timestamp_issues(bno_path: str, ago_path: str) -> list:
                         os.path.getmtime(os.path.join(dir_path, partner_match))
                     )
                     if diff > 60:
-                        mins, secs = int(diff // 60), int(diff % 60)
-                        diff_str = f"{mins}m {secs}s" if mins else f"{secs}s"
+                        diff_label, sev = _format_duration(diff)
                         issues.append(InvalidFile(
                             filename=name,
                             full_path=os.path.join(dir_path, name),
                             location=location, area=area,
-                            reason=f'Zeitstempel weicht ab ({diff_str}): .vwx und .json sind nicht synchron',
+                            reason=f'Zeitstempel weicht ab ({diff_label}): .vwx und .json sind nicht synchron',
+                            severity=sev,
                         ))
                 except OSError:
                     pass
