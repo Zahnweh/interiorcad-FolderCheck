@@ -255,7 +255,7 @@ CHECKED_TOPLEVEL_DIRS = {
 # Erlaubte Dateinamen in interiorcad/Stammdaten/
 # .bak-Varianten werden von interiorcad beim Aktualisieren automatisch erzeugt
 _STAMMDATEN_BASE = {"Boards.txt", "Coverings.txt", "Edges.txt", "Finishings.txt"}
-STAMMDATEN_VALID = _STAMMDATEN_BASE | {f"{f}.bak" for f in _STAMMDATEN_BASE}
+STAMMDATEN_VALID = _STAMMDATEN_BASE | {f"{f}.bak" for f in _STAMMDATEN_BASE} | {f"{f}.bak2" for f in _STAMMDATEN_BASE}
 
 
 def _load_export_basenames(subfolder: str, fallback: set) -> set:
