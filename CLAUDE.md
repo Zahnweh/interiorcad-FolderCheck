@@ -59,7 +59,10 @@ Checks run in background threads; results are displayed in color-tagged text wid
 ## Checker Rules Summary
 
 ### AGO Required Directories (must all exist)
-`Bibliotheken/`, `Bibliotheken/Vorgaben/`, `Bibliotheken/Vorgaben/Bauteil/`, `Bibliotheken/Vorgaben/Korpusmöbel/`, `Bibliotheken/Vorgaben/Korpusmöbel 3D/`, `Bibliotheken/Vorgaben/Korpusmöbel 3D/Saved Sets/`, `Bibliotheken/Vorgaben/Vorgabedokumente/`
+`Bibliotheken/`, `Bibliotheken/Vorgaben/`, `Bibliotheken/Vorgaben/Korpusmöbel/`
+
+### AGO Optional Directories (created by interiorcad on demand → no error if missing)
+`Bibliotheken/Vorgaben/Bauteil/`, `Bibliotheken/Vorgaben/Korpusmöbel 3D/`, `Bibliotheken/Vorgaben/Korpusmöbel 3D/Saved Sets/`, `Bibliotheken/Vorgaben/Vorgabedokumente/`, `Bibliotheken/Vorgaben/Export/`, `Bibliotheken/Visualisieren/Renderworks - Texturen/interiorcad/`
 
 Special AGO rules:
 - `NO_JSON_REQUIRED` set: certain profile folders don't need `.json` companion files
