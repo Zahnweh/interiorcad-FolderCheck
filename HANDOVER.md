@@ -26,7 +26,7 @@ vw_analyzer_final/
 ├── migrate_prefs.py              # VWAnalyzer.json → interiorcadFolderCheck.json
 ├── interiorcad FolderCheck.spec  # PyInstaller
 ├── build_mac.sh / build_windows.bat
-├── icon.icns / icon.png
+├── AppIcon.icon (Icon Composer) / icon.png
 ├── core/
 │   ├── ago_checker.py            # AGO-Prüflogik (NICHT verändern ohne Grund)
 │   ├── bno_checker.py            # BNO-Prüflogik
