@@ -91,38 +91,39 @@ rm -rf "$ICON_BUILD"
 /usr/libexec/PlistBuddy -c "Add :NSHumanReadableCopyright string Marcel Ostendorf, extragroup GmbH" "$APP/Contents/Info.plist" 2>/dev/null || true
 touch "$APP"
 
+# Signieren + DMG in einem Temp-Ordner außerhalb von iCloud/File Provider:
+# Der File Provider hängt in "Documents" ständig com.apple.FinderInfo an dist/,
+# was codesign mit "detritus not allowed" abbrechen lässt (xattr -cr hilft nicht).
+# ditto --noextattr kopiert ohne diese Attribute; dort wird signiert und das DMG gebaut.
+WORK="$(mktemp -d /tmp/interiorcad-build.XXXXXX)"
+trap 'rm -rf "$WORK"' EXIT
+STAGING="$WORK/dmg"
+mkdir -p "$STAGING"
+ditto --norsrc --noextattr --noqtn "$APP" "$STAGING/interiorcad FolderCheck.app"
+xattr -cr "$STAGING/interiorcad FolderCheck.app"
+
 # Ad-hoc-Signatur setzen (kein Apple-Developer-Account nötig).
 # Verhindert die "beschädigt"-Meldung auf macOS – ohne Signatur zeigt
 # Gatekeeper diesen Fehler auch bei intakten Apps. Mit Ad-hoc-Signatur
 # erscheint stattdessen "unbekannter Entwickler" → Rechtsklick → Öffnen möglich.
 echo "Signiere App (ad-hoc)..."
-xattr -cr "$APP"
-codesign --deep --force --sign - "$APP" && echo "  → Signiert" || echo "  → Signierung übersprungen (codesign nicht verfügbar)"
-
-echo "  → App erstellt: $APP"
+codesign --deep --force --sign - "$STAGING/interiorcad FolderCheck.app"
+codesign --verify --deep --strict "$STAGING/interiorcad FolderCheck.app"
+echo "  → Signiert und verifiziert"
 
 # 4. DMG erstellen
 echo "Erstelle DMG..."
 mkdir -p "$OUTPUT_DIR"
 DMG_OUT="$OUTPUT_DIR/interiorcad-FolderCheck.dmg"
 rm -f "$DMG_OUT"
-
-# Staging-Ordner vorbereiten
-STAGING="$OUTPUT_DIR/dmg_staging"
-rm -rf "$STAGING"
-mkdir -p "$STAGING"
-cp -r "$APP" "$STAGING/"
 ln -s /Applications "$STAGING/Programme"
-
-# DMG aus Staging erstellen
 hdiutil create \
     -volname "interiorcad FolderCheck" \
     -srcfolder "$STAGING" \
     -ov \
     -format UDZO \
-    "$DMG_OUT"
-
-rm -rf "$STAGING"
+    "$WORK/out.dmg"
+cp "$WORK/out.dmg" "$DMG_OUT"
 
 echo ""
 echo "✓ Fertig!"
